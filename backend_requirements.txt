@@ -1,0 +1,233 @@
+# ALEX FRONTEND DATA CONTRACT
+# This document specifies the exact data structures (JSON) required to populate the frontend UI.
+# Backend developers should ensure API responses match these schemas.
+
+================================================================================
+1. DASHBOARD PAGE
+   File: src/pages/Dashboard.tsx
+================================================================================
+
+[A] AGENT STATE
+    Description: Real-time status of the hardware robot.
+    Required Fields:
+    - is_active (boolean): "Active" vs "Standby" state.
+    - battery_level (integer): 0-100 percentage.
+    - is_connected (boolean): "Online" vs "Offline" MQTT status.
+    - active_status_message (string): e.g., "Alex is listening..." or "Alex is sleeping..."
+
+    JSON Structure:
+    {
+      "is_active": true,
+      "battery_level": 84,
+      "is_connected": true,
+      "active_status_message": "Alex is listening and ready to help."
+    }
+
+[B] UP NEXT (CALENDAR)
+    Description: The next upcoming scheduled event.
+    Required Fields:
+    - source (string): e.g., "Google Cal", "Outlook".
+    - title (string): Event summary.
+    - start_time (string/ISO): Start datetime.
+    - relative_time (string): e.g., "in 35 minutes".
+    - expanded_list (array): List of subsequent events for "Later Today".
+
+    JSON Structure:
+    {
+      "source": "Google Cal",
+      "title": "Project Review with Team",
+      "start_time": "10:00 AM",
+      "relative_time": "in 35 minutes",
+      "expanded_list": [
+        {
+          "time": "1:00 PM",
+          "title": "Lunch with Sarah",
+          "location": "Sushi Tei",
+          "color_theme": "pink" // optional UI hint
+        },
+        {
+          "time": "3:30 PM",
+          "title": "Design Sync",
+          "location": "Google Meet",
+          "color_theme": "purple"
+        }
+      ]
+    }
+
+[C] RECENT ACTIVITY
+    Description: List of recent system actions or interactions.
+    Required Fields:
+    - id (string): Unique ID.
+    - type (string): "interaction" | "memory" | "system".
+    - title (string): Short header.
+    - timestamp (string): Relative time e.g. "10m ago".
+    - description (string): Detailed body text.
+
+    JSON Structure:
+    [
+      {
+        "id": "act_1",
+        "type": "interaction",
+        "title": "Interaction: Morning Briefing",
+        "timestamp": "10m ago",
+        "description": "Summarized your calendar events and read top 3 news headlines."
+      },
+      {
+        "id": "act_2",
+        "type": "memory",
+        "title": "Memory Saved: Pasta Recipe",
+        "timestamp": "2h ago",
+        "description": "Saved \"Carbonara with guanciale\" to your recipe collection."
+      }
+    ]
+
+[D] WEATHER
+    Description: Current local weather.
+    Required Fields:
+    - location (string): City name.
+    - condition (string): Text description e.g. "Partly Cloudy".
+    - temp_c (integer): Temperature in Celsius.
+    - icon (string): Material symbol name e.g. "partly_cloudy_day".
+
+    JSON Structure:
+    {
+      "location": "Jakarta",
+      "condition": "Partly Cloudy",
+      "temp_c": 32,
+      "icon": "partly_cloudy_day"
+    }
+
+================================================================================
+2. NOTES PAGE
+   File: src/pages/Notes.tsx
+================================================================================
+
+[A] RECORDINGS LIST
+    Description: List of voice notes/recordings.
+    Required Fields:
+    - id (string): Unique ID.
+    - title (string): Generated or user-set title.
+    - date (string): Human readable date string e.g. "2 hrs ago".
+    - duration (string): Length e.g. "45 mins".
+    - summary (string): Short preview or full text.
+
+    JSON Structure:
+    [
+      {
+        "id": "rec_001",
+        "title": "Biology Lecture 101",
+        "date": "2 hrs ago",
+        "duration": "45 mins",
+        "summary": "Introduction to cell structure, mitosis vs meiosis..."
+      },
+      {
+        "id": "rec_002",
+        "title": "Team Standup",
+        "date": "Yesterday",
+        "duration": "15 mins",
+        "summary": "Updates from frontend team on the dashboard refactor..."
+      }
+    ]
+
+[B] RECORDING STATUS (MQTT/WebSocket)
+    Description: Live status of the recording process.
+    Required Fields:
+    - status (string): "IDLE" | "RECORDING" | "PROCESSING" | "GENERATED".
+    - processing_progress (integer): 0-100 (if status is PROCESSING).
+
+    JSON Structure:
+    {
+      "status": "PROCESSING",
+      "processing_progress": 45
+    }
+
+================================================================================
+3. MEMORY PAGE
+   File: src/pages/Memory.tsx
+================================================================================
+
+[A] LIVE HISTORY (Timeline)
+    Description: Chronological feed of memories and conversations.
+    Required Fields:
+    - id (number/string): Unique ID.
+    - date (string): Grouping header e.g. "Today".
+    - time (string): Specific time e.g. "10:45 AM".
+    - theme (string): Tag e.g. "Work", "Health", "Personal".
+    - type (string): "conversation" | "memory".
+    - title (string): Event title.
+    - summary (string): Description content.
+
+    JSON Structure:
+    [
+      {
+        "id": 1,
+        "date": "Today",
+        "time": "10:45 AM",
+        "theme": "Work",
+        "type": "conversation",
+        "title": "Q3 Strategy Discussion",
+        "summary": "Discussed roadmap priorities notably the mobile app launch."
+      },
+      {
+        "id": 2,
+        "date": "Today",
+        "time": "09:15 AM",
+        "theme": "Health",
+        "type": "memory",
+        "title": "Logged Breakfast",
+        "summary": "Added oatmeal and berries to nutrition log."
+      }
+    ]
+
+[B] BASE MEMORY (Facts)
+    Description: Categorized lists of long-term facts.
+    Required Fields:
+    - category (string): Section header.
+    - facts (array of strings): List of facts.
+
+    JSON Structure:
+    [
+      {
+        "category": "Identity",
+        "facts": [
+          "Name is Davin",
+          "Software Engineer",
+          "Lives in Jakarta"
+        ]
+      },
+      {
+        "category": "Preferences",
+        "facts": [
+          "Likes dark mode",
+          "Prefers concise answers"
+        ]
+      }
+    ]
+
+[C] RECENT CONTEXT (Raw)
+    Description: The raw context window text.
+    Required Fields:
+    - content (string): The full text dump.
+
+    JSON Structure:
+    {
+      "content": "[CONTEXT_WINDOW_START]\nUser is working on a React application...\n[CONTEXT_WINDOW_END]"
+    }
+
+================================================================================
+4. INTEGRATIONS PAGE
+   File: src/pages/Integrations.tsx
+================================================================================
+
+[A] SERVICE CONNECTIONS
+    Description: Connection status for external services.
+    Required Fields:
+    - Key (string): Service ID (GOOGLE, SPOTIFY, WHATSAPP).
+    - Value (boolean): True if connected/authenticated.
+
+    JSON Structure:
+    {
+      "GOOGLE": false,
+      "SPOTIFY": false,
+      "WHATSAPP": true
+    }

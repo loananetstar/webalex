@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@theme {
+    /* Colors */
+    --color-primary: #f4258c;
+    --color-primary-dark: #be185d;
+    --color-primary-light: #fce7f3;
+    --color-accent-pink: #db2777;
+    --color-blush-pink: #fff1f2;
+    --color-blush-sidebar: #fdf2f8;
+    --color-background-light: #fff0f5;
+    --color-background-dark: #1f1016;
+    --color-card-white: #ffffff;
+    --color-card-dark: #1a2c35;
+    --color-text-main-light: #831843;
+    --color-text-main-dark: #fce7f3;
+    --color-text-sub-light: #be185d;
+    --color-text-sub-dark: #f9a8d4;
+
+    /* Fonts */
+    --font-display: "Plus Jakarta Sans", "Manrope", sans-serif;
+    --font-body: "Plus Jakarta Sans", "Noto Sans", sans-serif;
+
+    /* Border Radius */
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -2px rgba(236, 72, 153, 0.1);
+    --shadow-glow: 0 0 15px rgba(236, 72, 153, 0.3);
+
+    /* Animations */
+    --animate-soft-pulse: soft-pulse 3s infinite;
+    --animate-spring: spring-entry 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+
+    @keyframes soft-pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 20px rgba(236, 72, 153, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(236, 72, 153, 0);
+        }
+    }
+
+    @keyframes spring-entry {
+        0% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+
+        50% {
+            opacity: 1;
+            transform: translateY(-4px) scale(1.01);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #fbcfe8;
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #f9a8d4;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+body {
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}

@@ -1,0 +1,5 @@
+{
+  "name": "ALEX",
+  "description": "A personal AI companion prototype featuring a dashboard, memory stream, note-taking interface, and personalization settings.",
+  "requestFramePermissions": []
+}

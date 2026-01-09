@@ -1,0 +1,592 @@
+================================================================================
+                    ALEX AI ASSISTANT - MQTT PROTOCOL GUIDE
+                           Backend: unified_app.py
+                         Version: 2.0 (Dashboard+Timeline)
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Connection Information
+2. Topic Reference
+3. Authentication Flow
+4. Note Taking System
+5. Live Agent Control
+6. Dashboard System
+7. Memory & Timeline
+8. Payload Schemas (Complete)
+9. Error Codes
+10. Timing & Sequence Diagrams
+11. Integration Examples
+
+================================================================================
+1. CONNECTION INFORMATION
+================================================================================
+
+Broker URL:     33d2caf18f7944cbb4ea3a8d2b8cba30.s1.eu.hivemq.cloud
+Port (TLS):     8883
+Port (WSS):     8884 (for web browsers)
+Username:       davinn
+Password:       Loana123*
+Protocol:       MQTT 3.1.1 / 5.0
+QoS Level:      1 (At least once delivery)
+
+WebSocket URL for Browser:
+wss://33d2caf18f7944cbb4ea3a8d2b8cba30.s1.eu.hivemq.cloud:8884/mqtt
+
+================================================================================
+2. TOPIC REFERENCE (Complete)
+================================================================================
+
+CONTROL TOPICS (Client -> Backend)
+-----------------------------------
+Topic                   Command Type        Payload Format
+/user1/0                AUTH REQUEST        Text (AUTH:SERVICE)
+/note/1                 NOTE CONTROL        Text (NOTEON/NOTEOFF/GET_SUMMARIZE)
+/agent/1                AGENT CONTROL       Text (AGENTON/AGENTOFF)
+history/2               HISTORY REQUEST     Text (check_history)
+dashboard/request       DASHBOARD REQUEST   Text (Any message triggers response)
+
+RESPONSE TOPICS (Backend -> Client)
+------------------------------------
+Topic                   Data Type           Publish Frequency
+/user2/0                AUTH RESPONSE       On-demand (Auth flow)
+/note/status            NOTE STATUS         Real-time during processing
+gacor/1                 NOTE RESULT         Once per session (Final summary)
+alex/dashboard/state    DASHBOARD STATE     Every 5 seconds (Heartbeat)
+dashboard/response      DASHBOARD DATA      On-demand (Response to request)
+history/1               TIMELINE FEED       On-demand (Response to check_history)
+
+================================================================================
+3. AUTHENTICATION FLOW
+================================================================================
+
+3.1 SUPPORTED SERVICES
+----------------------
+- GOOGLE      (All scopes: Gmail, Calendar, Drive, Classroom)
+- GMAIL       (Gmail only)
+- CALENDAR    (Calendar only)
+- DRIVE       (Drive readonly)
+- GCLASSROOM  (Classroom readonly)
+- SPOTIFY     (Playback control)
+
+3.2 REQUEST FORMAT
+------------------
+Topic:   /user1/0
+Payload: AUTH:GOOGLE
+         AUTH:GMAIL
+         AUTH:CALENDAR
+         AUTH:SPOTIFY
+         etc.
+
+3.3 RESPONSE FORMAT
+-------------------
+Topic: /user2/0
+
+A. SUCCESS FLOW
+   1. URL Sent:        https://accounts.google.com/o/oauth2/auth?...
+   2. User completes OAuth in browser
+   3. Success Message: SUCCESS:GOOGLE
+                      SUCCESS:SPOTIFY
+
+B. ERROR CASES
+   - AUTH_BUSY              (Another auth in progress, port locked)
+   - TIMEOUT                (60 second timeout expired)
+   - UNKNOWN:SERVICE_NAME   (Invalid service)
+   - ERROR:message          (Generic error)
+
+3.4 TIMING
+----------
+- Timeout: 60 seconds per auth request
+- Port: 8032 (locked during flow, one auth at a time)
+
+================================================================================
+4. NOTE TAKING SYSTEM
+================================================================================
+
+4.1 LIFECYCLE
+-------------
+IDLE -> RECORDING -> PROCESSING -> COMPLETE -> IDLE
+
+4.2 COMMANDS
+------------
+Topic: /note/1
+
+NOTEON          Start recording (Auto-pauses Agent if active)
+NOTEOFF         Stop recording & begin processing
+GET_SUMMARIZE   Re-send the last note summary (if exists)
+
+4.3 STATUS UPDATES (REAL-TIME)
+------------------------------
+Topic: /note/status
+Format: JSON
+
+STAGE 1: Recording Started
+{
+  "status": "RECORDING",
+  "session_id": "session_2026-01-09_16-30"
+}
+
+STAGE 2: Transcription (0%)
+{
+  "status": "TRANSCRIBING",
+  "progress": 0
+}
+
+STAGE 3: Summarization (20%)
+{
+  "status": "PROCESSING",
+  "progress": 20,
+  "message": "Summarizing 3 chunks..."
+}
+
+STAGE 4: Artifact Generation (60%)
+{
+  "status": "PROCESSING",
+  "progress": 60,
+  "message": "Generating Artifacts..."
+}
+
+STAGE 5: Complete (100%)
+{
+  "status": "COMPLETE",
+  "session_id": "session_2026-01-09_16-30"
+}
+
+ERROR STATE:
+{
+  "status": "ERROR",
+  "message": "Transcription failed"
+}
+
+4.4 FINAL RESULT
+----------------
+Topic: gacor/1
+Format: JSON
+
+{
+  "type": "note_summary",
+  "session_id": "session_2026-01-09_16-30",
+  "duration_minutes": 45,
+  "timestamp": "2026-01-09T16:30:00.123456",
+  "artifacts": {
+    "master_guide": "c:\\...\\data\\notes\\session_xxx\\master_guide.md",
+    "flashcards": "c:\\...\\data\\notes\\session_xxx\\flashcards.md",
+    "quiz": "c:\\...\\data\\notes\\session_xxx\\quiz.md"
+  },
+  "preview_text": "Meeting Summary: Discussed Q1 goals..."
+}
+
+4.5 TIMING
+----------
+- Recording: Unlimited (manual stop)
+- Transcription: ~1-2 min per 15 min of audio (Whisper Tiny)
+- Summarization: ~30-60 sec per 15 min chunk (Gemma 3)
+- Artifacts: ~45 sec parallel generation (Flashcards + Quiz)
+
+================================================================================
+5. LIVE AGENT CONTROL
+================================================================================
+
+5.1 COMMANDS
+------------
+Topic: /agent/1
+
+AGENTON     Start Live Agent (Voice + Camera)
+AGENTOFF    Stop Live Agent immediately
+
+5.2 BEHAVIOR
+------------
+- Agent uses microphone and camera (if available)
+- Auto-pauses when NOTEON is received
+- Auto-resumes when NOTEOFF completes
+- Cannot start during RECORDING mode
+
+5.3 STATUS
+----------
+No dedicated status topic. Use Dashboard Heartbeat to monitor.
+Heartbeat field: "is_active" = true when running
+
+================================================================================
+6. DASHBOARD SYSTEM
+================================================================================
+
+6.1 HEARTBEAT (AUTOMATIC)
+-------------------------
+Topic: alex/dashboard/state
+Frequency: Every 5 seconds
+Format: JSON
+
+{
+  "is_active": false,              // Agent running and not paused
+  "battery_level": 67,              // Mock value (0-100)
+  "is_connected": true,             // MQTT connection status
+  "active_status_message": "Alex is online and ready."
+}
+
+Possible Messages:
+- "Alex is online and ready."           (Idle)
+- "Listening..."                        (Agent active)
+- "Paused (Thinking/Recording)"         (Agent paused)
+
+6.2 DATA REQUEST
+----------------
+Topic: dashboard/request
+Payload: Any text (e.g., "GET")
+
+Response Topic: dashboard/response
+Response Format: JSON
+
+{
+  "weather": {
+    "location": "Jakarta",
+    "condition": "Partly Cloudy",
+    "temp_c": 32,
+    "icon": "partly_cloudy_day"
+  },
+  "integrations": {
+    "GOOGLE": true,       // token.json exists
+    "SPOTIFY": false,     // .cache exists
+    "WHATSAPP": false     // TODO: WAHA detection
+  }
+}
+
+Weather Icons:
+- "sunny"
+- "partly_cloudy_day"
+- "rainy"
+- "cloud"
+
+================================================================================
+7. MEMORY & TIMELINE
+================================================================================
+
+7.1 REQUEST
+-----------
+Topic: history/2
+Payload: check_history (case-insensitive)
+
+7.2 RESPONSE
+------------
+Topic: history/1
+Format: JSON
+
+IMPORTANT: This triggers LLM processing (3-5 second delay)
+
+{
+  "type": "timeline_feed",
+  "data": [
+    {
+      "id": 1,
+      "date": "Today",
+      "time": "04:25 PM",
+      "type": "conversation",         // or "memory"
+      "theme": "Work",                 // Work, Personal, Health, Code, General
+      "title": "Q3 Strategy Discussion",
+      "summary": "Discussed roadmap priorities..."
+    },
+    {
+      "id": 2,
+      "date": "Today",
+      "time": "09:15 AM",
+      "type": "memory",
+      "theme": "Health",
+      "title": "Logged Breakfast",
+      "summary": "Added oatmeal to nutrition log."
+    }
+  ]
+}
+
+7.3 TIMELINE GENERATION
+-----------------------
+- Uses: Gemini-2.0-Flash-Exp LLM
+- Processing: Asynchronous (ThreadPoolExecutor, 2 workers)
+- Wait Time: ~3 seconds for batch
+- Source: conversation_buffer (last 20 items)
+
+================================================================================
+8. PAYLOAD SCHEMAS (COMPLETE REFERENCE)
+================================================================================
+
+8.1 TEXT PAYLOADS (SIMPLE COMMANDS)
+-----------------------------------
+Topic           Direction   Examples
+/user1/0        ->          AUTH:GOOGLE, AUTH:SPOTIFY
+/note/1         ->          NOTEON, NOTEOFF, GET_SUMMARIZE
+/agent/1        ->          AGENTON, AGENTOFF
+history/2       ->          check_history
+dashboard/req   ->          GET, REFRESH, (any text)
+
+8.2 JSON PAYLOADS (STRUCTURED DATA)
+-----------------------------------
+
+A. Dashboard Heartbeat (alex/dashboard/state)
+{
+  "is_active": <boolean>,
+  "battery_level": <integer 0-100>,
+  "is_connected": <boolean>,
+  "active_status_message": <string>
+}
+
+B. Dashboard Response (dashboard/response)
+{
+  "weather": {
+    "location": <string>,
+    "condition": <string>,
+    "temp_c": <integer>,
+    "icon": <string>
+  },
+  "integrations": {
+    "GOOGLE": <boolean>,
+    "SPOTIFY": <boolean>,
+    "WHATSAPP": <boolean>
+  }
+}
+
+C. Note Status (/note/status)
+{
+  "status": <"RECORDING"|"TRANSCRIBING"|"PROCESSING"|"COMPLETE"|"ERROR">,
+  "session_id": <string, optional>,
+  "progress": <integer 0-100, optional>,
+  "message": <string, optional>
+}
+
+D. Note Result (gacor/1)
+{
+  "type": "note_summary",
+  "session_id": <string>,
+  "duration_minutes": <integer>,
+  "timestamp": <ISO8601>,
+  "artifacts": {
+    "master_guide": <filepath>,
+    "flashcards": <filepath>,
+    "quiz": <filepath>
+  },
+  "preview_text": <string, max 200 chars>
+}
+
+E. Timeline Feed (history/1)
+{
+  "type": "timeline_feed",
+  "data": [
+    {
+      "id": <integer>,
+      "date": <string>,
+      "time": <string>,
+      "type": <"conversation"|"memory">,
+      "theme": <string>,
+      "title": <string>,
+      "summary": <string>
+    }
+  ]
+}
+
+================================================================================
+9. ERROR CODES & MESSAGES
+================================================================================
+
+9.1 AUTHENTICATION ERRORS
+--------------------------
+AUTH_BUSY                Another auth flow is in progress (port locked)
+TIMEOUT                  60-second timeout expired (no callback received)
+UNKNOWN:SERVICE          Invalid service name
+ERROR:message            Generic error (OAuth exception, network, etc.)
+
+9.2 NOTE TAKING ERRORS
+----------------------
+ERROR (in JSON status):
+{
+  "status": "ERROR",
+  "message": "Transcription failed"    // No audio chunks
+}
+{
+  "status": "ERROR",
+  "message": "No summary available"    // GET_SUMMARIZE with no cache
+}
+
+9.3 AGENT ERRORS
+----------------
+Cannot start agent during recording  (Mode check)
+Agent already running                (Duplicate AGENTON)
+Agent not running                    (AGENTOFF when idle)
+GEMINI_API_KEY not set               (Missing env var)
+
+================================================================================
+10. TIMING & SEQUENCE DIAGRAMS
+================================================================================
+
+10.1 NOTE TAKING SEQUENCE
+-------------------------
+Client                  Backend                 Status Topic (/note/status)
+  |                        |                            |
+  |--NOTEON--------------->|                            |
+  |                        |----RECORDING:session------>|
+  |                        | [Recording audio...]       |
+  |--NOTEOFF-------------->|                            |
+  |                        |----TRANSCRIBING (0%)------>|
+  |                        | [Whisper processing]       |
+  |                        |----PROCESSING (20%)------->|
+  |                        | [LLM summarization]        |
+  |                        |----PROCESSING (60%)------->|
+  |                        | [Artifact generation]      |
+  |                        |----COMPLETE:session------->|
+  |<---FINAL RESULT (gacor/1)---|                       |
+
+Total Time: ~2-5 minutes for 15-min recording
+
+10.2 AUTHENTICATION SEQUENCE
+----------------------------
+Client                  Backend                 Browser
+  |                        |                       |
+  |--AUTH:GOOGLE---------->|                       |
+  |<---Auth URL------------|                       |
+  |                        |                       |
+  | [User opens URL]------>|                       |
+  |                        |<--Redirect (code)-----|
+  |                        | [Exchange code]       |
+  |<---SUCCESS:GOOGLE------|                       |
+
+Timeout: 60 seconds
+
+10.3 DASHBOARD HEARTBEAT
+------------------------
+Time    Backend                         Client (Subscribed)
+0s      Publish heartbeat -------------> Update UI
+5s      Publish heartbeat -------------> Update UI
+10s     Publish heartbeat -------------> Update UI
+...     (Continuous, every 5s)
+
+================================================================================
+11. INTEGRATION EXAMPLES
+================================================================================
+
+11.1 PYTHON CLIENT EXAMPLE
+---------------------------
+import paho.mqtt.client as mqtt
+import json
+
+BROKER = "33d2caf18f7944cbb4ea3a8d2b8cba30.s1.eu.hivemq.cloud"
+PORT = 8883
+
+def on_connect(client, userdata, flags, rc):
+    print("Connected!")
+    client.subscribe("alex/dashboard/state")
+    client.subscribe("/note/status")
+    client.subscribe("gacor/1")
+
+def on_message(client, userdata, msg):
+    topic = msg.topic
+    payload = msg.payload.decode()
+    
+    if topic == "alex/dashboard/state":
+        data = json.loads(payload)
+        print(f"Battery: {data['battery_level']}%")
+    
+    elif topic == "/note/status":
+        status = json.loads(payload)
+        print(f"Note Status: {status['status']} - {status.get('progress', 0)}%")
+    
+    elif topic == "gacor/1":
+        result = json.loads(payload)
+        print(f"Note Complete: {result['session_id']}")
+
+client = mqtt.Client()
+client.username_pw_set("davinn", "Loana123*")
+client.tls_set()
+client.on_connect = on_connect
+client.on_message = on_message
+client.connect(BROKER, PORT, 60)
+client.loop_forever()
+
+11.2 JAVASCRIPT CLIENT (Browser)
+---------------------------------
+const mqtt = require('mqtt');
+
+const client = mqtt.connect('wss://33d2caf18f7944cbb4ea3a8d2b8cba30.s1.eu.hivemq.cloud:8884/mqtt', {
+  username: 'davinn',
+  password: 'Loana123*'
+});
+
+client.on('connect', () => {
+  console.log('Connected!');
+  client.subscribe('alex/dashboard/state');
+  client.subscribe('/note/status');
+});
+
+client.on('message', (topic, message) => {
+  const data = JSON.parse(message.toString());
+  
+  if (topic === 'alex/dashboard/state') {
+    document.getElementById('battery').innerText = data.battery_level + '%';
+  }
+  
+  if (topic === '/note/status') {
+    if (data.status === 'PROCESSING') {
+      document.getElementById('progress').value = data.progress;
+    }
+  }
+});
+
+// Start note taking
+function startRecording() {
+  client.publish('/note/1', 'NOTEON');
+}
+
+// Stop note taking
+function stopRecording() {
+  client.publish('/note/1', 'NOTEOFF');
+}
+
+11.3 TESTING WITH MQTT_TESTER_MAIN.py
+--------------------------------------
+Run the included tester:
+> .\venv\Scripts\python.exe MQTT_TESTER_MAIN.py
+
+Commands:
+[1] AUTH:GOOGLE       Send auth request
+[2] NOTEON            Start note recording
+[3] NOTEOFF           Stop note recording
+[4] check_history     Request timeline
+[8] Custom command    Send any MQTT message
+
+================================================================================
+12. TROUBLESHOOTING
+================================================================================
+
+12.1 CONNECTION ISSUES
+----------------------
+Problem: Client can't connect
+Solutions:
+- Verify TLS/SSL support in client library
+- Check firewall (port 8883/8884)
+- Verify credentials (davinn / Loana123*)
+
+12.2 NO HEARTBEAT RECEIVED
+--------------------------
+Problem: No messages on alex/dashboard/state
+Solutions:
+- Verify backend is running (.\venv\Scripts\python.exe unified_app.py)
+- Check subscription QoS level
+- Wait 5 seconds (heartbeat interval)
+
+12.3 NOTE PROCESSING STUCK
+--------------------------
+Problem: Status shows PROCESSING but never completes
+Solutions:
+- Check backend logs for LLM errors
+- Verify GEMINI_API_KEY is set
+- Check audio file exists in data/notes/session_xxx/
+
+12.4 TIMELINE GENERATION TIMEOUT
+--------------------------------
+Problem: check_history never responds
+Solutions:
+- Wait 3-5 seconds (LLM processing time)
+- Check conversation_buffer has data
+- Verify Gemini API quota
+
+================================================================================
+END OF MQTT PROTOCOL GUIDE
+================================================================================
+For support: Check integration_verification.md
+Backend Source: c:\Users\ASUS\Downloads\genai\unified_app.py
+Last Updated: 2026-01-09
