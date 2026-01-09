@@ -1,233 +1,172 @@
-# ALEX FRONTEND DATA CONTRACT
-# This document specifies the exact data structures (JSON) required to populate the frontend UI.
-# Backend developers should ensure API responses match these schemas.
+# ALEX FRONTEND - BACKEND REQUIREMENTS SPECIFICATION (v2.1)
+# This document defines the EXACT JSON structures and behaviors the Frontend expects.
+# Backend developers: Please ensure your API/MQTT responses match these schemas to prevent UI crashes.
 
 ================================================================================
-1. DASHBOARD PAGE
-   File: src/pages/Dashboard.tsx
+1. SYSTEM HEALTH (HTTP)
+================================================================================
+The frontend polls this HTTP endpoint every 10 seconds to show the "System Health" widget.
+
+[GET] http://127.0.0.1:8033/health
+
+[RESPONSE PAYLOAD]
+{
+  "status": "ok",              // Enum: "ok" | "degraded" | "error"
+  "uptime_sec": 3600,          // Integer: Seconds since backend start
+  "mqtt_connected": true,      // Boolean: Internal backend connection to HiveMQ
+  "agent_running": true,       // Boolean: Is the Live Agent loop active?
+  "timestamp": "2026-01-09T..." // ISO String
+}
+
+[VISUAL IMPACT]
+- "status": Controls the green/orange color bar.
+- "mqtt_connected": Shows "Connected" (Green) or "Disconnected" (Red) in widget.
+- "agent_running": Shows "Active" (Purple) or "Idle" (Grey).
+
+================================================================================
+2. DASHBOARD (MQTT)
 ================================================================================
 
-[A] AGENT STATE
-    Description: Real-time status of the hardware robot.
-    Required Fields:
-    - is_active (boolean): "Active" vs "Standby" state.
-    - battery_level (integer): 0-100 percentage.
-    - is_connected (boolean): "Online" vs "Offline" MQTT status.
-    - active_status_message (string): e.g., "Alex is listening..." or "Alex is sleeping..."
+[A] HEARTBEAT
+Topic: alex/dashboard/state
+Frequency: Every 5 seconds (Backend initiated)
 
-    JSON Structure:
+[PAYLOAD]
+{
+  "is_active": true,           // Controls: Agent Status Card "Active" badge
+  "battery_level": 85,         // Controls: Battery % text
+  "is_connected": true,        // Controls: "Online" indicator
+  "active_status_message": "Listening for wake word..." // Controls: Subtitle text
+}
+
+[B] DATA REQUEST
+Topic: dashboard/request
+Frontend sends: "GET" (Every 60s)
+Expected Response Topic: dashboard/response
+
+[PAYLOAD]
+{
+  "weather": {
+    "location": "Jakarta",
+    "condition": "Cloudy",
+    "temp_c": 28,
+    "icon": "cloud"            // IMPORTANT: Must match a Google Material Symbol name
+                               // e.g., "sunny", "cloud", "rainy", "thunderstorm"
+  },
+  "integrations": {            // Controls: Green/Grey dots on Integrations Page
+    "GOOGLE": true,
+    "SPOTIFY": false,
+    "WHATSAPP": true
+  }
+}
+
+================================================================================
+3. MEMORY & ACTIVITY (MQTT)
+================================================================================
+
+[A] ACTIVITY SEARCH
+Topic: memory/activity/search
+Frontend sends: { "query": "...", "limit": 20, "activity_type": null, "days_back": 30 }
+Expected Response Topic: memory/activity/response
+
+[PAYLOAD]
+{
+  "results": [
     {
-      "is_active": true,
-      "battery_level": 84,
-      "is_connected": true,
-      "active_status_message": "Alex is listening and ready to help."
-    }
-
-[B] UP NEXT (CALENDAR)
-    Description: The next upcoming scheduled event.
-    Required Fields:
-    - source (string): e.g., "Google Cal", "Outlook".
-    - title (string): Event summary.
-    - start_time (string/ISO): Start datetime.
-    - relative_time (string): e.g., "in 35 minutes".
-    - expanded_list (array): List of subsequent events for "Later Today".
-
-    JSON Structure:
-    {
-      "source": "Google Cal",
-      "title": "Project Review with Team",
-      "start_time": "10:00 AM",
-      "relative_time": "in 35 minutes",
-      "expanded_list": [
-        {
-          "time": "1:00 PM",
-          "title": "Lunch with Sarah",
-          "location": "Sushi Tei",
-          "color_theme": "pink" // optional UI hint
-        },
-        {
-          "time": "3:30 PM",
-          "title": "Design Sync",
-          "location": "Google Meet",
-          "color_theme": "purple"
-        }
-      ]
-    }
-
-[C] RECENT ACTIVITY
-    Description: List of recent system actions or interactions.
-    Required Fields:
-    - id (string): Unique ID.
-    - type (string): "interaction" | "memory" | "system".
-    - title (string): Short header.
-    - timestamp (string): Relative time e.g. "10m ago".
-    - description (string): Detailed body text.
-
-    JSON Structure:
-    [
-      {
-        "id": "act_1",
-        "type": "interaction",
-        "title": "Interaction: Morning Briefing",
-        "timestamp": "10m ago",
-        "description": "Summarized your calendar events and read top 3 news headlines."
-      },
-      {
-        "id": "act_2",
-        "type": "memory",
-        "title": "Memory Saved: Pasta Recipe",
-        "timestamp": "2h ago",
-        "description": "Saved \"Carbonara with guanciale\" to your recipe collection."
+      "id": 101,
+      "activity_type": "note_taken",  // Enum: "note_taken" | "auth_event" | "system_log"
+      "timestamp": "2026-01-09T10:00:00Z",
+      "activity_data": {              // Flexible object displayed as JSON snippet
+        "note_id": "rec_123",
+        "title": "Meeting Notes"
       }
-    ]
-
-[D] WEATHER
-    Description: Current local weather.
-    Required Fields:
-    - location (string): City name.
-    - condition (string): Text description e.g. "Partly Cloudy".
-    - temp_c (integer): Temperature in Celsius.
-    - icon (string): Material symbol name e.g. "partly_cloudy_day".
-
-    JSON Structure:
+    },
     {
-      "location": "Jakarta",
-      "condition": "Partly Cloudy",
-      "temp_c": 32,
-      "icon": "partly_cloudy_day"
-    }
-
-================================================================================
-2. NOTES PAGE
-   File: src/pages/Notes.tsx
-================================================================================
-
-[A] RECORDINGS LIST
-    Description: List of voice notes/recordings.
-    Required Fields:
-    - id (string): Unique ID.
-    - title (string): Generated or user-set title.
-    - date (string): Human readable date string e.g. "2 hrs ago".
-    - duration (string): Length e.g. "45 mins".
-    - summary (string): Short preview or full text.
-
-    JSON Structure:
-    [
-      {
-        "id": "rec_001",
-        "title": "Biology Lecture 101",
-        "date": "2 hrs ago",
-        "duration": "45 mins",
-        "summary": "Introduction to cell structure, mitosis vs meiosis..."
-      },
-      {
-        "id": "rec_002",
-        "title": "Team Standup",
-        "date": "Yesterday",
-        "duration": "15 mins",
-        "summary": "Updates from frontend team on the dashboard refactor..."
+      "id": 102,
+      "activity_type": "auth_event",
+      "timestamp": "2026-01-09T09:30:00Z",
+      "activity_data": {
+        "service": "SPOTIFY",
+        "status": "SUCCESS"
       }
-    ]
-
-[B] RECORDING STATUS (MQTT/WebSocket)
-    Description: Live status of the recording process.
-    Required Fields:
-    - status (string): "IDLE" | "RECORDING" | "PROCESSING" | "GENERATED".
-    - processing_progress (integer): 0-100 (if status is PROCESSING).
-
-    JSON Structure:
-    {
-      "status": "PROCESSING",
-      "processing_progress": 45
     }
+  ]
+}
+
+[VISUAL IMPACT]
+- "activity_type": Maps to icons:
+    - "note_taken" -> "edit_note" (Purple Icon)
+    - "auth_event" -> "vpn_key" (Amber Icon)
+    - Others -> "list" (Grey Icon)
+
+[B] MEMORY STATS
+Topic: memory/stats/request
+Frontend sends: "get_stats"
+Expected Response Topic: memory/stats/response
+
+[PAYLOAD]
+{
+  "total": 1542,
+  "last_24h": 12,
+  "by_type": {
+    "note_taken": 45,
+    "auth_event": 5,
+    "conversation": 120
+  }
+}
 
 ================================================================================
-3. MEMORY PAGE
-   File: src/pages/Memory.tsx
+4. SMART NOTES (MQTT)
 ================================================================================
 
-[A] LIVE HISTORY (Timeline)
-    Description: Chronological feed of memories and conversations.
-    Required Fields:
-    - id (number/string): Unique ID.
-    - date (string): Grouping header e.g. "Today".
-    - time (string): Specific time e.g. "10:45 AM".
-    - theme (string): Tag e.g. "Work", "Health", "Personal".
-    - type (string): "conversation" | "memory".
-    - title (string): Event title.
-    - summary (string): Description content.
+[A] RECORDING CONTROL
+Frontend sends: "NOTEON" (Start) or "NOTEOFF" (Stop) to /note/1
 
-    JSON Structure:
-    [
-      {
-        "id": 1,
-        "date": "Today",
-        "time": "10:45 AM",
-        "theme": "Work",
-        "type": "conversation",
-        "title": "Q3 Strategy Discussion",
-        "summary": "Discussed roadmap priorities notably the mobile app launch."
-      },
-      {
-        "id": 2,
-        "date": "Today",
-        "time": "09:15 AM",
-        "theme": "Health",
-        "type": "memory",
-        "title": "Logged Breakfast",
-        "summary": "Added oatmeal and berries to nutrition log."
-      }
-    ]
+[B] STATUS UPDATES
+Topic: /note/status
+Backend should send updates as state changes.
 
-[B] BASE MEMORY (Facts)
-    Description: Categorized lists of long-term facts.
-    Required Fields:
-    - category (string): Section header.
-    - facts (array of strings): List of facts.
+[PAYLOADS]
+1. { "status": "RECORDING" }
+2. { "status": "TRANSCRIBING", "progress": 20 }
+3. { "status": "PROCESSING", "progress": 40, "message": "Analyzing text..." }
+4. { "status": "COMPLETE" }
+5. { "status": "ERROR", "message": "Microphone unreachable" }
 
-    JSON Structure:
-    [
-      {
-        "category": "Identity",
-        "facts": [
-          "Name is Davin",
-          "Software Engineer",
-          "Lives in Jakarta"
-        ]
-      },
-      {
-        "category": "Preferences",
-        "facts": [
-          "Likes dark mode",
-          "Prefers concise answers"
-        ]
-      }
-    ]
+[C] FINAL RESULT
+Topic: gacor/1
+Triggered when processing finishes.
 
-[C] RECENT CONTEXT (Raw)
-    Description: The raw context window text.
-    Required Fields:
-    - content (string): The full text dump.
+[PAYLOAD]
+{
+  "type": "note_summary",
+  "session_id": "sess_8823",
+  "timestamp": "2026-01-09...",
+  "duration_minutes": 15,
+  "preview_text": "This user discussed the project roadmap...", // Main summary
+  "artifacts": {
+    "flashcards": "flashcards_sess_8823.json",  // Filename or key
+    "quiz": "quiz_sess_8823.json",
+    "master_guide": "guide_sess_8823.md"
+  }
+}
 
-    JSON Structure:
-    {
-      "content": "[CONTEXT_WINDOW_START]\nUser is working on a React application...\n[CONTEXT_WINDOW_END]"
-    }
+[VISUAL IMPACT]
+- "artifacts": If keys exist (flashcards/quiz), buttons appear in UI to open them.
 
 ================================================================================
-4. INTEGRATIONS PAGE
-   File: src/pages/Integrations.tsx
+5. AUTHENTICATION (MQTT)
 ================================================================================
 
-[A] SERVICE CONNECTIONS
-    Description: Connection status for external services.
-    Required Fields:
-    - Key (string): Service ID (GOOGLE, SPOTIFY, WHATSAPP).
-    - Value (boolean): True if connected/authenticated.
+Topic: /user1/0 (Request) -> /user2/0 (Response)
 
-    JSON Structure:
-    {
-      "GOOGLE": false,
-      "SPOTIFY": false,
-      "WHATSAPP": true
-    }
+[FLOW]
+1. Frontend sends: "AUTH:SPOTIFY"
+2. Backend responds: "http://accounts.spotify.com/..."
+   -> Frontend opens Popup.
+3. User completes login.
+4. Backend responds: "SUCCESS:SPOTIFY"
+   -> Frontend updates UI to "Connected" state.
+
+[ERROR HANDLING]
+Backend can send: "ERROR:Timeout", "AUTH_BUSY", "UNKNOWN:SERVICE"

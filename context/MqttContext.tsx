@@ -55,7 +55,9 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 'gacor/1',                  // NOTE RESULT (Final summary)
                 'alex/dashboard/state',     // DASHBOARD STATE (Heartbeat - every 5s)
                 'dashboard/response',       // DASHBOARD DATA (On-demand)
-                'history/1'                 // TIMELINE FEED (On-demand)
+                'history/1',                // TIMELINE FEED (On-demand)
+                'memory/activity/response', // ACTIVITY DATA (On-demand) [NEW v2.1]
+                'memory/stats/response'     // MEMORY STATS (On-demand) [NEW v2.1]
             ];
 
             mqttClient.subscribe(topics, { qos: 1 }, (err) => {

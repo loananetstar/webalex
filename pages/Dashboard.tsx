@@ -4,6 +4,7 @@ import { useMqtt } from '../context/MqttContext';
 import { motion } from 'framer-motion';
 import AgentStatusCard from '../components/dashboard/AgentStatusCard';
 import WeatherWidget from '../components/dashboard/WeatherWidget';
+import SystemHealthWidget from '../components/dashboard/SystemHealthWidget';
 
 // Define the context type provided by App.tsx
 interface DashboardContextType {
@@ -120,6 +121,9 @@ const Dashboard: React.FC = () => {
                     </motion.div>
 
                     <motion.div variants={itemVariants} className="lg:col-span-1 flex flex-col gap-4">
+                        {/* System Health Monitor (v2.1) */}
+                        <SystemHealthWidget />
+
                         <div className="relative h-[280px]"> {/* Placeholder to maintain layout */}
                             <div
                                 className={`

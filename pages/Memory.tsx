@@ -17,36 +17,109 @@ User prefers 'premium' aesthetics: pink/purple gradients, rounded corners, glass
 Last action: Updated RobotModel.tsx with pixel eyes.
 [CONTEXT_WINDOW_END]`;
 
+// Type definitions based on MQTT Protocol Guide v2.1
+interface ActivityItem {
+    id: number;
+    activity_type: string;
+    timestamp: string;
+    activity_data: any;
+}
+
+interface MemoryStats {
+    total: number;
+    by_type: Record<string, number>;
+    last_24h: number;
+    last_7d: number;
+}
+
 const Memory: React.FC = () => {
     const { publish, messages } = useMqtt();
-    const [activeTab, setActiveTab] = useState<'live' | 'base' | 'recent'>('live');
+    const [activeTab, setActiveTab] = useState<'live' | 'activity' | 'base' | 'recent'>('live');
+
+    // Data States
     const [timeline, setTimeline] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loadingTimeline, setLoadingTimeline] = useState(false);
+
+    const [activityLog, setActivityLog] = useState<ActivityItem[]>([]);
+    const [stats, setStats] = useState<MemoryStats | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [loadingActivity, setLoadingActivity] = useState(false);
+
+    // Initial Load - Fetch Stats
+    useEffect(() => {
+        // Request stats on mount
+        publish('memory/stats/request', 'get_stats');
+    }, [publish]);
 
     // Parse MQTT Messages
     useEffect(() => {
+        // 1. Timeline Feed
         if (messages['history/1']) {
             try {
                 const data = JSON.parse(messages['history/1']);
                 if (data.type === 'timeline_feed' && data.data) {
                     setTimeline(data.data);
-                    setLoading(false);
+                    setLoadingTimeline(false);
                 }
             } catch (e) {
                 console.error('Failed to parse timeline:', e);
-                setLoading(false);
+                setLoadingTimeline(false);
+            }
+        }
+
+        // 2. Activity Search Response
+        if (messages['memory/activity/response']) {
+            try {
+                const data = JSON.parse(messages['memory/activity/response']);
+                if (data.results) {
+                    setActivityLog(data.results);
+                    setLoadingActivity(false);
+                }
+            } catch (e) {
+                console.error('Failed to parse activity response:', e);
+                setLoadingActivity(false);
+            }
+        }
+
+        // 3. Stats Response
+        if (messages['memory/stats/response']) {
+            try {
+                const data = JSON.parse(messages['memory/stats/response']);
+                setStats(data);
+            } catch (e) {
+                console.error('Failed to parse stats:', e);
             }
         }
     }, [messages]);
 
-    // Request timeline when Live History tab is selected
+    // Request Data on Tab Change
     useEffect(() => {
         if (activeTab === 'live') {
-            setLoading(true);
+            setLoadingTimeline(true);
             publish('history/2', 'check_history');
-            // Note: Protocol guide warns of 3-5 second LLM processing delay
+        } else if (activeTab === 'activity') {
+            setLoadingActivity(true);
+            // Initial empty search to get recent
+            publish('memory/activity/search', JSON.stringify({
+                query: "",
+                activity_type: null,
+                days_back: 30,
+                limit: 10
+            }));
+            publish('memory/stats/request', 'get_stats');
         }
     }, [activeTab, publish]);
+
+    const handleActivitySearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoadingActivity(true);
+        publish('memory/activity/search', JSON.stringify({
+            query: searchQuery,
+            activity_type: null,
+            days_back: 30,
+            limit: 20
+        }));
+    };
 
     return (
         <div className="bg-gradient-to-br from-pink-50 to-white dark:from-[#1a0f14] dark:to-[#15232b] font-display text-slate-800 dark:text-slate-100 h-full flex flex-col overflow-hidden w-full">
@@ -65,25 +138,16 @@ const Memory: React.FC = () => {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex bg-slate-100 dark:bg-black/20 p-1 rounded-xl">
-                    <button
-                        onClick={() => setActiveTab('live')}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'live' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        Live History
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('base')}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'base' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        Base Memory
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('recent')}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'recent' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        Recent Context
-                    </button>
+                <div className="flex bg-slate-100 dark:bg-black/20 p-1 rounded-xl overflow-x-auto">
+                    {['live', 'activity', 'base', 'recent'].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab as any)}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all capitalize whitespace-nowrap ${activeTab === tab ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            {tab === 'live' ? 'Live History' : tab === 'activity' ? 'Activity Log' : tab === 'base' ? 'Base Memory' : 'Recent Context'}
+                        </button>
+                    ))}
                 </div>
             </header>
 
@@ -97,7 +161,7 @@ const Memory: React.FC = () => {
                                 <h2 className="text-2xl font-black text-slate-800 dark:text-white">Live History</h2>
                                 <button
                                     onClick={() => {
-                                        setLoading(true);
+                                        setLoadingTimeline(true);
                                         publish('history/2', 'check_history');
                                     }}
                                     className="px-3 py-1 bg-white dark:bg-white/10 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-50 dark:hover:bg-white/20 transition-colors"
@@ -106,7 +170,7 @@ const Memory: React.FC = () => {
                                 </button>
                             </div>
 
-                            {loading ? (
+                            {loadingTimeline ? (
                                 <div className="flex flex-col items-center justify-center py-20">
                                     <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                                     <p className="text-sm text-slate-500">Loading timeline (3-5s LLM processing)...</p>
@@ -118,12 +182,9 @@ const Memory: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="relative pl-8 border-l-2 border-pink-100 dark:border-slate-700 space-y-12">
-                                    {/* Timeline Items */}
                                     {timeline.map((item, i) => (
-                                        <div key={item.id} className="relative group">
-                                            {/* Dot */}
+                                        <div key={item.id || i} className="relative group">
                                             <div className={`absolute -left-[41px] top-1 size-5 rounded-full border-4 border-white dark:border-[#1a0f14] ${item.type === 'conversation' ? 'bg-purple-500' : 'bg-teal-500'} group-hover:scale-125 transition-transform shadow-sm`}></div>
-
                                             <div className="flex flex-col gap-1 mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.date} • {item.time}</span>
@@ -136,9 +197,85 @@ const Memory: React.FC = () => {
                                                 </div>
                                                 <h3 className="text-lg font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors cursor-pointer">{item.title}</h3>
                                             </div>
-
                                             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-pink-50 dark:border-slate-700 shadow-sm group-hover:shadow-md transition-shadow cursor-pointer">
                                                 <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{item.summary}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* --- ACTIVITY LOG --- */}
+                    {activeTab === 'activity' && (
+                        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-right-4 duration-300">
+
+                            {/* Stats Overview */}
+                            {stats && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <div className="text-slate-500 text-xs font-bold uppercase mb-1">Total Activities</div>
+                                        <div className="text-2xl font-black text-slate-800 dark:text-white">{stats.total}</div>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <div className="text-slate-500 text-xs font-bold uppercase mb-1">Last 24h</div>
+                                        <div className="text-2xl font-black text-teal-500">{stats.last_24h}</div>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <div className="text-slate-500 text-xs font-bold uppercase mb-1">Notes Taken</div>
+                                        <div className="text-2xl font-black text-purple-500">{stats.by_type?.note_taken || 0}</div>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <div className="text-slate-500 text-xs font-bold uppercase mb-1">Auth Events</div>
+                                        <div className="text-2xl font-black text-amber-500">{stats.by_type?.auth_event || 0}</div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Search */}
+                            <form onSubmit={handleActivitySearch} className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400">search</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Search logs..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/50 text-slate-800 dark:text-white"
+                                    />
+                                </div>
+                                <button type="submit" className="bg-slate-800 dark:bg-white text-white dark:text-slate-900 px-6 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
+                                    Search
+                                </button>
+                            </form>
+
+                            {/* Results */}
+                            {loadingActivity ? (
+                                <div className="text-center py-20 text-slate-500">Loading activities...</div>
+                            ) : activityLog.length === 0 ? (
+                                <div className="text-center py-20 text-slate-400">No activities found.</div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {activityLog.map((log) => (
+                                        <div key={log.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                                            <div className="flex gap-4 items-center">
+                                                <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${log.activity_type === 'note_taken' ? 'bg-purple-100 text-purple-600' :
+                                                    log.activity_type === 'auth_event' ? 'bg-amber-100 text-amber-600' :
+                                                        'bg-slate-100 text-slate-600'
+                                                    }`}>
+                                                    <span className="material-symbols-outlined">
+                                                        {log.activity_type === 'note_taken' ? 'edit_note' :
+                                                            log.activity_type === 'auth_event' ? 'vpn_key' : 'list'}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-800 dark:text-white capitalize">{log.activity_type.replace('_', ' ')}</div>
+                                                    <div className="text-xs text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-slate-50 dark:bg-black/30 px-3 py-2 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400 w-full md:w-auto max-w-md overflow-hidden text-ellipsis whitespace-nowrap">
+                                                {JSON.stringify(log.activity_data)}
                                             </div>
                                         </div>
                                     ))}
@@ -170,13 +307,6 @@ const Memory: React.FC = () => {
                                         </ul>
                                     </div>
                                 ))}
-                                {/* Add New Memory Card */}
-                                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 flex items-center justify-center text-slate-400 hover:text-teal-500 hover:border-teal-200 hover:bg-teal-50/50 transition-all cursor-pointer group">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_circle</span>
-                                        <span className="font-bold text-sm">Add Core Memory</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     )}
@@ -196,11 +326,6 @@ const Memory: React.FC = () => {
                                     className="w-full h-[500px] bg-slate-50 dark:bg-[#1a0f14] border border-slate-200 dark:border-slate-700 rounded-2xl p-6 font-mono text-xs md:text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-pink-200 resize-none custom-scrollbar leading-relaxed"
                                     value={RECENT_MEMORY_RAW}
                                 />
-                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="bg-white dark:bg-slate-700 p-2 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-500 hover:text-primary">
-                                        Copy Raw
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     )}
