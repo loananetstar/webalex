@@ -101,7 +101,7 @@ const Memory: React.FC = () => {
             setLoadingActivity(true);
             // Initial empty search to get recent
             publish('memory/activity/search', JSON.stringify({
-                query: "",
+                query: "*",
                 activity_type: null,
                 days_back: 30,
                 limit: 10
@@ -262,11 +262,15 @@ const Memory: React.FC = () => {
                                             <div className="flex gap-4 items-center">
                                                 <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${log.activity_type === 'note_taken' ? 'bg-purple-100 text-purple-600' :
                                                     log.activity_type === 'auth_event' ? 'bg-amber-100 text-amber-600' :
-                                                        'bg-slate-100 text-slate-600'
+                                                        log.activity_type === 'dashboard_access' ? 'bg-teal-100 text-teal-600' :
+                                                            log.activity_type === 'note_session' ? 'bg-blue-100 text-blue-600' :
+                                                                'bg-slate-100 text-slate-600'
                                                     }`}>
                                                     <span className="material-symbols-outlined">
                                                         {log.activity_type === 'note_taken' ? 'edit_note' :
-                                                            log.activity_type === 'auth_event' ? 'vpn_key' : 'list'}
+                                                            log.activity_type === 'auth_event' ? 'vpn_key' :
+                                                                log.activity_type === 'dashboard_access' ? 'dashboard' :
+                                                                    log.activity_type === 'note_session' ? 'mic' : 'list'}
                                                     </span>
                                                 </div>
                                                 <div>

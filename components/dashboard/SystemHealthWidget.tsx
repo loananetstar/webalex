@@ -5,6 +5,7 @@ interface HealthData {
     uptime_sec: number;
     mqtt_connected: boolean;
     agent_running: boolean;
+    memory_init: boolean; // v3.0
     timestamp: string;
 }
 
@@ -74,7 +75,7 @@ const SystemHealthWidget: React.FC = () => {
                     </p>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${health.status === 'ok' ? 'bg-teal-100 text-teal-700' : 'bg-orange-100 text-orange-700'}`}>
-                    v2.1
+                    v3.0
                 </span>
             </div>
 
@@ -104,6 +105,16 @@ const SystemHealthWidget: React.FC = () => {
                     </span>
                     <span className={`font-bold ${health.agent_running ? 'text-purple-500' : 'text-slate-400'}`}>
                         {health.agent_running ? 'Active' : 'Idle'}
+                    </span>
+                </div>
+
+                {/* Memory Init Status (v3.0) */}
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-base">memory</span> Long-Term Memory
+                    </span>
+                    <span className={`font-bold ${health.memory_init ? 'text-blue-500' : 'text-orange-500'}`}>
+                        {health.memory_init ? 'Ready' : 'Initializing'}
                     </span>
                 </div>
             </div>

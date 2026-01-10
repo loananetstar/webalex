@@ -17,23 +17,33 @@ const Notes: React.FC = () => {
                 const data = JSON.parse(messages['/note/status']);
                 setNoteStatus(data);
 
-                // Update recording state based on status
-                if (data.status === 'RECORDING') {
-                    setRecording(true);
-                } else if (data.status === 'COMPLETE' || data.status === 'ERROR') {
-                    setRecording(false);
-                }
+                // Update recording state based on status (Strict)
+                // Only 'RECORDING' means we are capturing audio.
+                // TRANSCRIBING/PROCESSING means we stopped.
+                setRecording(data.status === 'RECORDING');
             } catch (e) {
                 console.error('Failed to parse note status:', e);
             }
         }
 
-        // gacor/1 - Final note result
+        // gacor/1 - Final note result (v4.0 Rule: Check for error)
         if (messages['gacor/1']) {
             try {
                 const data = JSON.parse(messages['gacor/1']);
+
+                if (data.type === 'error') {
+                    // Handle v4.0 Error Response
+                    console.error('Note generation error:', data.message);
+                    setNoteStatus({ status: 'ERROR', message: data.message });
+                    setRecording(false);
+                    return;
+                }
+
                 if (data.type === 'note_summary') {
                     setNoteResult(data);
+                    setNoteStatus({ status: 'COMPLETE', progress: 100 }); // Ensure UI clears processing state
+                    setRecording(false); // Safety clear
+
                     // Add to recent list
                     const newNote = {
                         id: data.session_id,
@@ -44,7 +54,7 @@ const Notes: React.FC = () => {
                         artifacts: data.artifacts
                     };
                     setRecentList(prev => [newNote, ...prev]);
-                    // Auto-select the new note
+                    // Auto-select
                     setTimeout(() => {
                         document.getElementById(`note-${newNote.id}`)?.click();
                     }, 100);
@@ -56,34 +66,34 @@ const Notes: React.FC = () => {
     }, [messages]);
 
     const toggleRecording = () => {
+        if (isProcessing) return; // Prevent action while processing
+
         if (!recording) {
-            // Start recording
             publish('/note/1', 'NOTEON');
         } else {
-            // Stop recording
             publish('/note/1', 'NOTEOFF');
         }
     };
 
-    // Get status display from noteStatus
+    // Helper to copy path
+    const copyPath = (label: string, path: string | null) => {
+        if (path) {
+            navigator.clipboard.writeText(path);
+            alert(`${label} location copied to clipboard:\n${path}`);
+        }
+    };
+
     const getStatusDisplay = () => {
         if (!noteStatus) return { text: 'IDLE', progress: 0, message: '' };
-
         const { status, progress = 0, message = '' } = noteStatus;
 
         switch (status) {
-            case 'RECORDING':
-                return { text: 'RECORDING', progress: 0, message: 'Recording audio...' };
-            case 'TRANSCRIBING':
-                return { text: 'TRANSCRIBING', progress, message: 'Converting speech to text...' };
-            case 'PROCESSING':
-                return { text: 'PROCESSING', progress, message: message || 'Generating summary...' };
-            case 'COMPLETE':
-                return { text: 'COMPLETE', progress: 100, message: 'Summary ready!' };
-            case 'ERROR':
-                return { text: 'ERROR', progress: 0, message: message || 'Processing failed' };
-            default:
-                return { text: 'IDLE', progress: 0, message: '' };
+            case 'RECORDING': return { text: 'RECORDING', progress: 0, message: 'Recording audio...' };
+            case 'TRANSCRIBING': return { text: 'TRANSCRIBING', progress, message: 'Converting speech to text...' };
+            case 'PROCESSING': return { text: 'PROCESSING', progress, message: message || 'Generating summary...' };
+            case 'COMPLETE': return { text: 'COMPLETE', progress: 100, message: 'Summary ready!' };
+            case 'ERROR': return { text: 'ERROR', progress: 0, message: message || 'Processing failed' };
+            default: return { text: 'IDLE', progress: 0, message: '' };
         }
     };
 
@@ -92,7 +102,6 @@ const Notes: React.FC = () => {
 
     return (
         <div className="bg-gradient-to-br from-pink-50 to-white dark:from-[#1a0f14] dark:to-[#15232b] font-display text-slate-800 dark:text-slate-100 h-full flex flex-col overflow-hidden w-full">
-
             {/* Header */}
             <header className="h-16 border-b border-pink-100 dark:border-slate-800 bg-white/60 dark:bg-[#15232b]/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
                 <div className="flex items-center gap-4">
@@ -108,33 +117,42 @@ const Notes: React.FC = () => {
             </header>
 
             <main className="flex-1 flex overflow-hidden">
-
                 {/* Left Sidebar: Recent Recordings */}
                 <aside className="w-80 bg-white dark:bg-[#15232b] border-r border-pink-100 dark:border-slate-800 flex flex-col shrink-0 h-full overflow-hidden">
                     <div className="p-6 pb-4 border-b border-pink-50 dark:border-slate-800">
                         {/* Recording Button */}
                         <button
                             onClick={toggleRecording}
-                            className={`w-full relative overflow-hidden rounded-2xl p-6 flex flex-col items-center justify-center gap-2 transition-all shadow-lg group ${recording
-                                ? 'bg-white border-2 border-red-100'
-                                : 'bg-gradient-to-br from-primary to-pink-600 dark:from-primary dark:to-purple-600 text-white hover:shadow-primary/30'
+                            disabled={isProcessing}
+                            className={`w-full relative overflow-hidden rounded-2xl p-6 flex flex-col items-center justify-center gap-2 transition-all shadow-lg group ${isProcessing
+                                    ? 'bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 cursor-not-allowed opacity-80'
+                                    : recording
+                                        ? 'bg-white border-2 border-red-100'
+                                        : 'bg-gradient-to-br from-primary to-pink-600 dark:from-primary dark:to-purple-600 text-white hover:shadow-primary/30'
                                 }`}
                         >
-                            {/* Pulse Effect when recording */}
-                            {recording && (
-                                <span className="absolute inset-0 bg-red-500/10 animate-pulse"></span>
-                            )}
-
-                            <div className={`p-4 rounded-full transition-all ${recording ? 'bg-red-100 text-red-500' : 'bg-white/20 text-white'}`}>
-                                <span className={`material-symbols-outlined text-3xl ${recording ? 'animate-pulse' : ''}`}>
-                                    {recording ? 'stop' : 'mic'}
+                            {recording && <span className="absolute inset-0 bg-red-500/10 animate-pulse"></span>}
+                            <div className={`p-4 rounded-full transition-all ${isProcessing
+                                    ? 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                                    : recording
+                                        ? 'bg-red-100 text-red-500'
+                                        : 'bg-white/20 text-white'
+                                }`}>
+                                <span className={`material-symbols-outlined text-3xl ${recording ? 'animate-pulse' : ''} ${isProcessing ? 'animate-spin' : ''}`}>
+                                    {isProcessing ? 'sync' : recording ? 'stop' : 'mic'}
                                 </span>
                             </div>
                             <div className="text-center relative z-10">
-                                <span className={`block font-bold text-lg ${recording ? 'text-red-500' : 'text-white'}`}>
-                                    {recording ? 'Stop Recording' : 'Start Recording'}
+                                <span className={`block font-bold text-lg ${isProcessing
+                                        ? 'text-slate-500'
+                                        : recording
+                                            ? 'text-red-500'
+                                            : 'text-white'
+                                    }`}>
+                                    {isProcessing ? 'Processing...' : recording ? 'Stop Recording' : 'Start Recording'}
                                 </span>
                                 {recording && <span className="text-xs text-red-400 font-medium animate-pulse">Recording active...</span>}
+                                {isProcessing && <span className="text-xs text-slate-400 font-medium">Please wait</span>}
                             </div>
                         </button>
 
@@ -188,9 +206,7 @@ const Notes: React.FC = () => {
                             <div className="flex justify-between items-end mb-6">
                                 <div>
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Summary View</span>
-                                    <h2 className="text-3xl font-black text-slate-800 dark:text-white mt-1">
-                                        Session {new Date(noteResult.timestamp).toLocaleString()}
-                                    </h2>
+                                    <h2 className="text-3xl font-black text-slate-800 dark:text-white mt-1">Session {new Date(noteResult.timestamp).toLocaleString()}</h2>
                                     <div className="flex gap-3 text-sm text-slate-500 mt-2">
                                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">schedule</span> {noteResult.duration_minutes} mins</span>
                                     </div>
@@ -200,37 +216,58 @@ const Notes: React.FC = () => {
                             {/* Summary Card */}
                             <div className="bg-white dark:bg-[#1f2937] rounded-3xl p-8 border border-pink-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-purple-500"></div>
-
                                 <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary">auto_awesome</span>
                                     AI Summary
                                 </h3>
-                                <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-lg">
-                                    {noteResult.preview_text}
-                                </p>
+                                <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-lg">{noteResult.preview_text}</p>
 
-                                {/* Artifact Files */}
+                                {/* Artifact Files (v4.0 - File Paths) */}
                                 {noteResult.artifacts && (
                                     <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
-                                        <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-3">Generated Files:</h4>
-                                        <div className="flex flex-col gap-2">
+                                        <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-3">Generated Artifacts (Click to Copy Path):</h4>
+                                        <div className="flex flex-wrap gap-2">
                                             {noteResult.artifacts.master_guide && (
-                                                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                                    <span className="material-symbols-outlined text-xs">description</span>
-                                                    <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{noteResult.artifacts.master_guide}</code>
-                                                </div>
+                                                <button onClick={() => copyPath('Master Guide', noteResult.artifacts.master_guide)} className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                                    <span className="material-symbols-outlined text-purple-500 text-lg">description</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Master Guide</span>
+                                                </button>
                                             )}
                                             {noteResult.artifacts.flashcards && (
-                                                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                                    <span className="material-symbols-outlined text-xs">style</span>
-                                                    <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{noteResult.artifacts.flashcards}</code>
-                                                </div>
+                                                <button onClick={() => copyPath('Flashcards', noteResult.artifacts.flashcards)} className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                                    <span className="material-symbols-outlined text-amber-500 text-lg">style</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Flashcards</span>
+                                                </button>
                                             )}
                                             {noteResult.artifacts.quiz && (
-                                                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                                    <span className="material-symbols-outlined text-xs">quiz</span>
-                                                    <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{noteResult.artifacts.quiz}</code>
-                                                </div>
+                                                <button onClick={() => copyPath('Quiz', noteResult.artifacts.quiz)} className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                                    <span className="material-symbols-outlined text-green-500 text-lg">quiz</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Quiz</span>
+                                                </button>
+                                            )}
+                                            {noteResult.artifacts.mindmap && (
+                                                <button onClick={() => copyPath('Mindmap', noteResult.artifacts.mindmap)} className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                                    <span className="material-symbols-outlined text-blue-500 text-lg">account_tree</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Mindmap</span>
+                                                </button>
+                                            )}
+                                            {noteResult.artifacts.cornell_notes && (
+                                                <button onClick={() => copyPath('Cornell Notes', noteResult.artifacts.cornell_notes)} className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                                    <span className="material-symbols-outlined text-orange-500 text-lg">grid_goldenratio</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Cornell Notes</span>
+                                                </button>
+                                            )}
+                                            {noteResult.artifacts.spaced_repetition && (
+                                                <button onClick={() => copyPath('Spaced Repetition', noteResult.artifacts.spaced_repetition)} className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                                    <span className="material-symbols-outlined text-teal-500 text-lg">update</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Spaced Rep.</span>
+                                                </button>
+                                            )}
+                                            {noteResult.artifacts.citation_index && (
+                                                <button onClick={() => copyPath('Citations', noteResult.artifacts.citation_index)} className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                                    <span className="material-symbols-outlined text-pink-500 text-lg">format_quote</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">Citations</span>
+                                                </button>
                                             )}
                                         </div>
                                     </div>

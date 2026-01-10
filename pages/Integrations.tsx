@@ -7,20 +7,23 @@ const ServiceCard = ({
     connected,
     type,
     onConnect,
-    isLoading
+    isLoading,
+    isExternalLink = false // Prop for WhatsApp
 }: {
     icon: string,
     name: string,
     connected: boolean,
     type: string,
     onConnect: () => void,
-    isLoading: boolean
+    isLoading: boolean,
+    isExternalLink?: boolean
 }) => (
     <div className="group flex flex-col p-6 rounded-2xl bg-white dark:bg-[#1a2c35] border border-pink-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(236,72,153,0.08)] hover:shadow-[0_12px_32px_rgba(236,72,153,0.15)] transition-all duration-300 transform hover:-translate-y-2 h-full justify-between">
         <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                     <div className="size-14 rounded-2xl flex items-center justify-center bg-pink-100 dark:bg-pink-900/30 text-primary dark:text-pink-400 group-hover:scale-110 transition-transform duration-300">
+                        {/* Use custom images for well-known brands if needed, but sticking to material symbols for consistency if no svg assets */}
                         <span className="material-symbols-outlined text-3xl">{icon}</span>
                     </div>
                     <div>
@@ -56,7 +59,7 @@ const ServiceCard = ({
                         Waiting...
                     </>
                 ) : (
-                    connected ? 'Disconnect' : 'Connect'
+                    connected ? 'Disconnect' : (isExternalLink ? 'Open' : 'Connect')
                 )}
             </button>
         </div>
@@ -69,7 +72,11 @@ const Integrations: React.FC = () => {
     const [connections, setConnections] = useState<Record<string, boolean>>({
         'GOOGLE': false,
         'SPOTIFY': false,
-        'WHATSAPP': false
+        // WhatsApp doesn't have a backend 'connected' state sent via MQTT yet, assume strictly client-side link for now or if backend sends it.
+        // Assuming backend sends 'WHATSAPP' if using waha api, but user said "just bring user to url". Let's track it locally or assume always "ready to connect".
+        // Actually, user wants "Connected" state displayed? For "multiple tunnel", likely they share state.
+        // For WhatsApp, user creates manual link. It's likely stateless in the backend for now? Or maybe we track connection?
+        // Let's assume disconnected unless we get a signal.
     });
 
     // Parse MQTT messages
@@ -119,21 +126,40 @@ const Integrations: React.FC = () => {
         }
     }, [isConnected, publish]);
 
-    const handleConnect = (service: string, command: string) => {
-        if (connections[service]) {
-            // Disconnect logic (just toggle off locally for now)
-            setConnections(prev => ({ ...prev, [service]: false }));
+    const handleConnect = (serviceKey: string, command: string) => {
+        // WhatsApp Limit: Just open URL
+        if (serviceKey === 'WHATSAPP') {
+            window.open('https://waha.lumyx.my.id', '_blank');
+            return;
+        }
+
+        const isGoogleService = ['GMAIL', 'CLASSROOM', 'DRIVE', 'CALENDAR', 'GOOGLE'].includes(serviceKey);
+        const actualStateKey = isGoogleService ? 'GOOGLE' : serviceKey; // All Google services share 'GOOGLE' state
+
+        if (connections[actualStateKey]) {
+            // Disconnect logic
+            setConnections(prev => ({ ...prev, [actualStateKey]: false }));
         } else {
             // Connect: Start auth flow
-            setLoadingService(service);
+            setLoadingService(serviceKey); // Show loading spinner on the specific card clicked
             publish('/user1/0', command);
 
             // Timeout fallback (60s as per protocol guide)
             setTimeout(() => {
-                setLoadingService(prev => prev === service ? null : prev);
+                setLoadingService(prev => prev === serviceKey ? null : prev);
             }, 60000);
         }
     };
+
+    // Helper to get loading state for shared Google services
+    const isGoogleLoading = (key: string) => {
+        if (loadingService === key) return true;
+        // If any google service triggered loading, maybe show loading on all? Or just the one clicked.
+        // User UX: better to show on the one clicked.
+        return false;
+    };
+
+    const googleConnected = connections['GOOGLE'] || false;
 
     return (
         <div className="flex flex-col h-full w-full overflow-y-auto custom-scrollbar">
@@ -146,47 +172,55 @@ const Integrations: React.FC = () => {
                             <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">Manage what Alex can access.</p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-                        <ServiceCard
-                            icon="calendar_month"
-                            name="Google Calendar"
-                            type="Calendar"
-                            connected={connections['GOOGLE']}
-                            isLoading={loadingService === 'GOOGLE'}
-                            onConnect={() => handleConnect('GOOGLE', 'AUTH:CALENDAR')}
-                        />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+
+                        {/* Google Ecosystem - Distinct entries, same tunnel */}
                         <ServiceCard
                             icon="mail"
-                            name="Google Mail"
-                            type="Mail"
-                            connected={connections['GOOGLE']}
-                            isLoading={loadingService === 'GOOGLE'}
-                            onConnect={() => handleConnect('GOOGLE', 'AUTH:GMAIL')}
-                        />
-                        <ServiceCard
-                            icon="folder"
-                            name="Google Drive"
-                            type="Storage"
-                            connected={connections['GOOGLE']}
-                            isLoading={loadingService === 'GOOGLE'}
-                            onConnect={() => handleConnect('GOOGLE', 'AUTH:DRIVE')}
+                            name="Gmail"
+                            type="Google"
+                            connected={googleConnected}
+                            isLoading={isGoogleLoading('GMAIL')}
+                            onConnect={() => handleConnect('GMAIL', 'AUTH:GOOGLE')}
                         />
                         <ServiceCard
                             icon="school"
-                            name="Google Classroom"
-                            type="Education"
-                            connected={connections['GOOGLE']}
-                            isLoading={loadingService === 'GOOGLE'}
-                            onConnect={() => handleConnect('GOOGLE', 'AUTH:GCLASSROOM')}
+                            name="Classroom"
+                            type="Google"
+                            connected={googleConnected}
+                            isLoading={isGoogleLoading('CLASSROOM')}
+                            onConnect={() => handleConnect('CLASSROOM', 'AUTH:GOOGLE')}
                         />
+                        <ServiceCard
+                            icon="cloud"
+                            name="Drive"
+                            type="Google"
+                            connected={googleConnected}
+                            isLoading={isGoogleLoading('DRIVE')}
+                            onConnect={() => handleConnect('DRIVE', 'AUTH:GOOGLE')}
+                        />
+                        <ServiceCard
+                            icon="calendar_today"
+                            name="Calendar"
+                            type="Google"
+                            connected={googleConnected}
+                            isLoading={isGoogleLoading('CALENDAR')}
+                            onConnect={() => handleConnect('CALENDAR', 'AUTH:GOOGLE')}
+                        />
+
+                        {/* WhatsApp - Link */}
                         <ServiceCard
                             icon="chat"
                             name="WhatsApp"
-                            type="Communication"
-                            connected={connections['WHATSAPP']}
-                            isLoading={loadingService === 'WHATSAPP'}
-                            onConnect={() => handleConnect('WHATSAPP', 'AUTH:WHATSAPP')}
+                            type="Messaging"
+                            connected={false} // Always shows as "Open" / Disconnected visually since we don't track it
+                            isLoading={false}
+                            isExternalLink={true}
+                            onConnect={() => handleConnect('WHATSAPP', '')}
                         />
+
+                        {/* Spotify - Distinct Auth */}
                         <ServiceCard
                             icon="music_note"
                             name="Spotify"
@@ -194,6 +228,7 @@ const Integrations: React.FC = () => {
                             connected={connections['SPOTIFY']}
                             isLoading={loadingService === 'SPOTIFY'}
                             onConnect={() => handleConnect('SPOTIFY', 'AUTH:SPOTIFY')}
+                            isExternalLink={false}
                         />
                     </div>
                 </div>

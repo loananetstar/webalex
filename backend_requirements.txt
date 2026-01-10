@@ -1,172 +1,155 @@
-# ALEX FRONTEND - BACKEND REQUIREMENTS SPECIFICATION (v2.1)
-# This document defines the EXACT JSON structures and behaviors the Frontend expects.
-# Backend developers: Please ensure your API/MQTT responses match these schemas to prevent UI crashes.
+# MQTT Protocol Guide v4.0 "Strict" Edition
+# Backend Requirements Specification
 
-================================================================================
-1. SYSTEM HEALTH (HTTP)
-================================================================================
-The frontend polls this HTTP endpoint every 10 seconds to show the "System Health" widget.
+## Critical Design Rules (STRICT ENFORCEMENT)
+1. **Reactive Only**: Backend NEVER sends data unprompted (except Note status). Frontend MUST request data.
+2. **Rate Limiting**: Backend MUST ignore requests from same client/topic if < 500ms apart.
+3. **Guaranteed Response**: Every request MUST get a JSON response. Even errors.
+   - Error Format: `{"type": "error", "message": "Reason..."}`
+4. **Null Handling**: Missing fields = `null`. NEVER empty strings/objects.
+   - Example: `{"artifacts": null}` NOT `{"artifacts": {}}` or `""`.
+5. **Strict Enums**: Unknown values in 'type' or 'status' fields = ERROR response.
 
-[GET] http://127.0.0.1:8033/health
+---
 
-[RESPONSE PAYLOAD]
+## 1. Authentication (Google / Spotify)
+**Topic**: `/user1/0` (Request) -> `/user2/0` (Response)
+
+### Requests (Frontend -> Backend)
+- **Google**: `AUTH:GOOGLE`
+- **Spotify**: `AUTH:SPOTIFY`
+
+### Responses (Backend -> Frontend)
+- **Log URL**: `https://accounts.google.com/o/oauth2/...` (Frontend opens this)
+- **Success**: `SUCCESS:GOOGLE` or `SUCCESS:SPOTIFY`
+- **Error**: `ERROR:TIMEOUT`, `ERROR:INVALID_SCOPE`
+
+---
+
+## 2. Notes & Audio
+**Topic**: `/note/1` (Control) -> `/note/status` (Progress) -> `gacor/1` (Result)
+
+### Control (Frontend -> Backend)
+- `NOTEON`: Start recording.
+- `NOTEOFF`: Stop recording.
+
+### Status Updates (Backend -> Frontend)
+- **Topic**: `/note/status`
+- **Payload**:
+```json
 {
-  "status": "ok",              // Enum: "ok" | "degraded" | "error"
-  "uptime_sec": 3600,          // Integer: Seconds since backend start
-  "mqtt_connected": true,      // Boolean: Internal backend connection to HiveMQ
-  "agent_running": true,       // Boolean: Is the Live Agent loop active?
-  "timestamp": "2026-01-09T..." // ISO String
+  "status": "RECORDING" | "TRANSCRIBING" | "PROCESSING" | "COMPLETE" | "ERROR",
+  "progress": 0-100, // Number
+  "message": "Step description..." // String or null
 }
+```
 
-[VISUAL IMPACT]
-- "status": Controls the green/orange color bar.
-- "mqtt_connected": Shows "Connected" (Green) or "Disconnected" (Red) in widget.
-- "agent_running": Shows "Active" (Purple) or "Idle" (Grey).
-
-================================================================================
-2. DASHBOARD (MQTT)
-================================================================================
-
-[A] HEARTBEAT
-Topic: alex/dashboard/state
-Frequency: Every 5 seconds (Backend initiated)
-
-[PAYLOAD]
+### Final Result (Backend -> Frontend)
+- **Topic**: `gacor/1`
+- **Payload**:
+```json
 {
-  "is_active": true,           // Controls: Agent Status Card "Active" badge
-  "battery_level": 85,         // Controls: Battery % text
-  "is_connected": true,        // Controls: "Online" indicator
-  "active_status_message": "Listening for wake word..." // Controls: Subtitle text
-}
-
-[B] DATA REQUEST
-Topic: dashboard/request
-Frontend sends: "GET" (Every 60s)
-Expected Response Topic: dashboard/response
-
-[PAYLOAD]
-{
-  "weather": {
-    "location": "Jakarta",
-    "condition": "Cloudy",
-    "temp_c": 28,
-    "icon": "cloud"            // IMPORTANT: Must match a Google Material Symbol name
-                               // e.g., "sunny", "cloud", "rainy", "thunderstorm"
+  "type": "note_summary",
+  "session_id": "uuid-string",
+  "timestamp": "ISO-8601",
+  "duration_minutes": 5,
+  "preview_text": "Summary of the note...",
+  "artifacts": {
+    "master_guide": "C:\\Users\\User\\...\\master_guide.md", // Absolute Path or null
+    "flashcards": "C:\\Users\\User\\...\\flashcards.json",
+    "quiz": null,
+    "mindmap": null,
+    "cornell_notes": "C:\\Users\\User\\...\\cornell.md",
+    "spaced_repetition": null,
+    "citation_index": null
   },
-  "integrations": {            // Controls: Green/Grey dots on Integrations Page
-    "GOOGLE": true,
-    "SPOTIFY": false,
-    "WHATSAPP": true
+  "stats": {
+    "word_count": 450,
+    "audio_size_mb": 2.4
   }
 }
+```
+*Note: Artifacts are file paths. Frontend displays them but cannot open them directly without backend file serving.*
 
-================================================================================
-3. MEMORY & ACTIVITY (MQTT)
-================================================================================
+---
 
-[A] ACTIVITY SEARCH
-Topic: memory/activity/search
-Frontend sends: { "query": "...", "limit": 20, "activity_type": null, "days_back": 30 }
-Expected Response Topic: memory/activity/response
+## 3. Memory & Activity
+**Topic**: `memory/activity/search` -> `memory/activity/response`
+**Topic**: `memory/stats/request` -> `memory/stats/response`
 
-[PAYLOAD]
+### Activity Search
+- **Request**:
+```json
+{
+  "query": "search term" | "",
+  "activity_type": "auth_event" | "note_taken" | "dashboard_access" | "note_session" | null,
+  "days_back": 30, // Default 30
+  "limit": 20      // Default 20
+}
+```
+- **Response** (`memory/activity/response`):
+```json
 {
   "results": [
     {
-      "id": 101,
-      "activity_type": "note_taken",  // Enum: "note_taken" | "auth_event" | "system_log"
-      "timestamp": "2026-01-09T10:00:00Z",
-      "activity_data": {              // Flexible object displayed as JSON snippet
-        "note_id": "rec_123",
-        "title": "Meeting Notes"
-      }
-    },
-    {
-      "id": 102,
-      "activity_type": "auth_event",
-      "timestamp": "2026-01-09T09:30:00Z",
-      "activity_data": {
-        "service": "SPOTIFY",
-        "status": "SUCCESS"
-      }
+      "id": 123,
+      "activity_type": "note_taken", // STRICT ENUM: auth_event, note_taken, dashboard_access, note_session
+      "timestamp": "ISO-8601",
+      "activity_data": { "title": "Math Class", "duration": "5m" } // Arbitrary Object
     }
   ]
 }
+```
 
-[VISUAL IMPACT]
-- "activity_type": Maps to icons:
-    - "note_taken" -> "edit_note" (Purple Icon)
-    - "auth_event" -> "vpn_key" (Amber Icon)
-    - Others -> "list" (Grey Icon)
-
-[B] MEMORY STATS
-Topic: memory/stats/request
-Frontend sends: "get_stats"
-Expected Response Topic: memory/stats/response
-
-[PAYLOAD]
+### Memory Stats
+- **Request**: `get_stats`
+- **Response** (`memory/stats/response`):
+```json
 {
-  "total": 1542,
+  "total": 1500,
   "last_24h": 12,
   "by_type": {
-    "note_taken": 45,
-    "auth_event": 5,
-    "conversation": 120
+    "auth_event": 50,
+    "note_taken": 200,
+    "dashboard_access": 1000,
+    "note_session": 250
   }
 }
+```
 
-================================================================================
-4. SMART NOTES (MQTT)
-================================================================================
+---
 
-[A] RECORDING CONTROL
-Frontend sends: "NOTEON" (Start) or "NOTEOFF" (Stop) to /note/1
+## 4. Dashboard & System
+**Topic**: `dashboard/request` -> `dashboard/response`
+**Topic**: `alex/dashboard/state/request` -> `alex/dashboard/state/response`
 
-[B] STATUS UPDATES
-Topic: /note/status
-Backend should send updates as state changes.
-
-[PAYLOADS]
-1. { "status": "RECORDING" }
-2. { "status": "TRANSCRIBING", "progress": 20 }
-3. { "status": "PROCESSING", "progress": 40, "message": "Analyzing text..." }
-4. { "status": "COMPLETE" }
-5. { "status": "ERROR", "message": "Microphone unreachable" }
-
-[C] FINAL RESULT
-Topic: gacor/1
-Triggered when processing finishes.
-
-[PAYLOAD]
+### Dashboard Data
+- **Request**: `GET` (Rate Limit: 1 request per 30s)
+- **Response**:
+```json
 {
-  "type": "note_summary",
-  "session_id": "sess_8823",
-  "timestamp": "2026-01-09...",
-  "duration_minutes": 15,
-  "preview_text": "This user discussed the project roadmap...", // Main summary
-  "artifacts": {
-    "flashcards": "flashcards_sess_8823.json",  // Filename or key
-    "quiz": "quiz_sess_8823.json",
-    "master_guide": "guide_sess_8823.md"
+  "weather": { "temp": 28, "condition": "Sunny", "location": "Jakarta" },
+  "integrations": {
+    "GOOGLE": true,
+    "SPOTIFY": false
   }
 }
+```
 
-[VISUAL IMPACT]
-- "artifacts": If keys exist (flashcards/quiz), buttons appear in UI to open them.
+### Agent Heartbeat
+- **Request**: `ping` (Rate Limit: 1 request per 5s)
+- **Response**:
+```json
+{
+  "is_active": true,
+  "battery_level": 85,
+  "is_connected": true,
+  "active_status_message": "Online and listening"
+}
+```
 
-================================================================================
-5. AUTHENTICATION (MQTT)
-================================================================================
-
-Topic: /user1/0 (Request) -> /user2/0 (Response)
-
-[FLOW]
-1. Frontend sends: "AUTH:SPOTIFY"
-2. Backend responds: "http://accounts.spotify.com/..."
-   -> Frontend opens Popup.
-3. User completes login.
-4. Backend responds: "SUCCESS:SPOTIFY"
-   -> Frontend updates UI to "Connected" state.
-
-[ERROR HANDLING]
-Backend can send: "ERROR:Timeout", "AUTH_BUSY", "UNKNOWN:SERVICE"
+## 5. Agent Control
+**Topic**: `/agent/1`
+- `AGENTON`: Wake agent.
+- `AGENTOFF`: Sleep agent.
+- *No Response payload defined in v4.0 (Fire and Forget or Status update via Heartbeat).*

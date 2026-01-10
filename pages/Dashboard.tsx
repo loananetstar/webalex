@@ -4,7 +4,8 @@ import { useMqtt } from '../context/MqttContext';
 import { motion } from 'framer-motion';
 import AgentStatusCard from '../components/dashboard/AgentStatusCard';
 import WeatherWidget from '../components/dashboard/WeatherWidget';
-import SystemHealthWidget from '../components/dashboard/SystemHealthWidget';
+
+import DebugLogWidget from '../components/dashboard/DebugLogWidget';
 
 // Define the context type provided by App.tsx
 interface DashboardContextType {
@@ -57,10 +58,10 @@ const Dashboard: React.FC = () => {
 
     // Parse MQTT messages
     useEffect(() => {
-        // Heartbeat from alex/dashboard/state
-        if (messages['alex/dashboard/state']) {
+        // Heartbeat from alex/dashboard/state/response (v3.0 Reactive)
+        if (messages['alex/dashboard/state/response']) {
             try {
-                const data = JSON.parse(messages['alex/dashboard/state']);
+                const data = JSON.parse(messages['alex/dashboard/state/response']);
                 setHeartbeat(data);
             } catch (e) {
                 console.error('Failed to parse heartbeat:', e);
@@ -87,13 +88,23 @@ const Dashboard: React.FC = () => {
             publish('dashboard/request', 'GET');
         };
 
+        const fetchHeartbeat = () => {
+            // Reactive Heartbeat v3.0
+            publish('alex/dashboard/state/request', 'ping');
+        };
+
         // Initial fetch
         fetchData();
+        fetchHeartbeat();
 
-        // Interval fetch (60s)
-        const intervalId = setInterval(fetchData, 60000);
+        // Interval fetch (30s for Data, 5s for Heartbeat)
+        const dataInterval = setInterval(fetchData, 30000);
+        const heartbeatInterval = setInterval(fetchHeartbeat, 5000);
 
-        return () => clearInterval(intervalId);
+        return () => {
+            clearInterval(dataInterval);
+            clearInterval(heartbeatInterval);
+        };
     }, [isConnected, publish]);
 
     const toggleAgent = () => {
@@ -121,8 +132,7 @@ const Dashboard: React.FC = () => {
                     </motion.div>
 
                     <motion.div variants={itemVariants} className="lg:col-span-1 flex flex-col gap-4">
-                        {/* System Health Monitor (v2.1) */}
-                        <SystemHealthWidget />
+
 
                         <div className="relative h-[280px]"> {/* Placeholder to maintain layout */}
                             <div

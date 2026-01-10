@@ -53,11 +53,11 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 '/user2/0',                 // AUTH RESPONSE
                 '/note/status',             // NOTE STATUS (Real-time)
                 'gacor/1',                  // NOTE RESULT (Final summary)
-                'alex/dashboard/state',     // DASHBOARD STATE (Heartbeat - every 5s)
+                'alex/dashboard/state/response', // DASHBOARD HEARTBEAT (Reactive v3.0)
                 'dashboard/response',       // DASHBOARD DATA (On-demand)
                 'history/1',                // TIMELINE FEED (On-demand)
-                'memory/activity/response', // ACTIVITY DATA (On-demand) [NEW v2.1]
-                'memory/stats/response'     // MEMORY STATS (On-demand) [NEW v2.1]
+                'memory/activity/response', // ACTIVITY DATA (On-demand)
+                'memory/stats/response'     // MEMORY STATS (On-demand)
             ];
 
             mqttClient.subscribe(topics, { qos: 1 }, (err) => {
@@ -103,8 +103,20 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, []);
 
-    const publish = (topic: string, message: string) => {
+    // Rate Limiting (v4.0 Rule: 500ms)
+    const lastPublishRef = useRef<Record<string, number>>({});
+
+    const publish = React.useCallback((topic: string, message: string) => {
+        const now = Date.now();
+        const lastTime = lastPublishRef.current[topic] || 0;
+
+        if (now - lastTime < 500) {
+            console.warn(`⚠️ Rate Limit: Ignored publish to '${topic}' (<500ms).`);
+            return;
+        }
+
         if (clientRef.current && clientRef.current.connected) {
+            lastPublishRef.current[topic] = now;
             clientRef.current.publish(topic, message, { qos: 1 }, (error) => {
                 if (error) {
                     console.error('Publish error:', error);
@@ -115,10 +127,17 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
             console.warn('Cannot publish: MQTT not connected. Queueing or ignoring.');
         }
-    };
+    }, []);
+
+    const contextValue = React.useMemo(() => ({
+        isConnected,
+        publish,
+        lastMessage,
+        messages
+    }), [isConnected, publish, lastMessage, messages]);
 
     return (
-        <MqttContext.Provider value={{ isConnected, publish, lastMessage, messages }}>
+        <MqttContext.Provider value={contextValue}>
             {children}
         </MqttContext.Provider>
     );
