@@ -1,0 +1,585 @@
+================================================================================
+                    MQTT INTEGRATION GUIDE FOR FRONTEND
+                          (100% Working Reference)
+================================================================================
+
+Last Updated: January 11, 2026
+Backend: unified_app.py (Multi-Threaded Architecture)
+Status: PRODUCTION READY
+
+================================================================================
+SECTION 1: CONNECTION SETUP
+================================================================================
+
+MQTT BROKER DETAILS:
+--------------------
+Host:     33d2caf18f7944cbb4ea3a8d2b8cba30.s1.eu.hivemq.cloud
+Port:     8883 (TLS/SSL Required)
+Username: davinn
+Password: Loana123*
+Protocol: MQTT v5 (Recommended) or v3.1.1
+
+JAVASCRIPT EXAMPLE (MQTT.js):
+------------------------------
+const mqtt = require('mqtt');
+
+const client = mqtt.connect('mqtts://33d2caf18f7944cbb4ea3a8d2b8cba30.s1.eu.hivemq.cloud:8883', {
+  username: 'davinn',
+  password: 'Loana123*',
+  clientId: 'frontend_' + Math.random().toString(16).substr(2, 8),
+  clean: true,
+  reconnectPeriod: 1000
+});
+
+client.on('connect', () => {
+  console.log('Connected to MQTT Broker');
+  
+  // Subscribe to all response topics
+  client.subscribe('/user2/0');           // Auth responses
+  client.subscribe('/note/status');       // Note status updates
+  client.subscribe('gacor/1');            // Note results
+  client.subscribe('history/1');          // History responses
+  client.subscribe('dashboard/response'); // Dashboard data
+  client.subscribe('alex/dashboard/state/response'); // Heartbeat responses
+  client.subscribe('memory/activity/response');      // Memory search results
+  client.subscribe('memory/stats/response');         // Memory stats
+});
+
+client.on('message', (topic, payload) => {
+  const message = payload.toString();
+  console.log(`[${topic}] ${message}`);
+  // Your handling logic here
+});
+
+================================================================================
+SECTION 2: AUTHENTICATION SYSTEM
+================================================================================
+
+2.1 TRIGGER AUTHENTICATION
+---------------------------
+TOPIC:   /user1/0
+PAYLOAD: "AUTH:GMAIL" | "AUTH:CALENDAR" | "AUTH:DRIVE" | "AUTH:GCLASSROOM" | "AUTH:SPOTIFY"
+
+Example:
+  client.publish('/user1/0', 'AUTH:GMAIL');
+
+2.2 RECEIVE AUTHENTICATION LINK
+--------------------------------
+TOPIC:   /user2/0
+PAYLOAD: <OAuth URL String> | "SUCCESS:GMAIL" | "TIMEOUT" | "ERROR:..."
+
+Step-by-Step Flow:
+1. User clicks "Connect Gmail" in your UI
+2. Frontend publishes: /user1/0 → "AUTH:GMAIL"
+3. Backend responds: /user2/0 → "https://accounts.google.com/o/oauth2/auth?..."
+4. Frontend displays this URL (open in new tab or iframe)
+5. User completes OAuth in browser
+6. Backend sends: /user2/0 → "SUCCESS:GMAIL"
+7. Frontend shows "Connected" badge
+
+IMPORTANT NOTES:
+- The OAuth link expires in 60 seconds
+- If user doesn't complete auth, backend sends "TIMEOUT"
+- For Spotify: Use "AUTH:SPOTIFY" (same flow)
+
+================================================================================
+SECTION 3: NOTE TAKER SYSTEM
+================================================================================
+
+3.1 START RECORDING
+-------------------
+TOPIC:   /note/1
+PAYLOAD: "NOTEON"
+
+Example:
+  client.publish('/note/1', 'NOTEON');
+
+3.2 STOP RECORDING & PROCESS
+-----------------------------
+TOPIC:   /note/1
+PAYLOAD: "NOTEOFF"
+
+Example:
+  client.publish('/note/1', 'NOTEOFF');
+
+3.3 RECEIVE STATUS UPDATES
+---------------------------
+TOPIC:   /note/status
+PAYLOAD: JSON
+
+Status Types:
+{
+  "status": "RECORDING",
+  "duration": 30
+}
+
+{
+  "status": "TRANSCRIBING",
+  "progress": 0
+}
+
+{
+  "status": "PROCESSING",
+  "progress": 60,
+  "message": "Generating 7 artifacts with citations..."
+}
+
+{
+  "status": "COMPLETE",
+  "session_id": "note_20260111_103045"
+}
+
+{
+  "status": "ERROR",
+  "message": "Transcription failed"
+}
+
+3.4 RECEIVE FINAL RESULTS
+--------------------------
+TOPIC:   gacor/1
+PAYLOAD: JSON
+
+Example Result:
+{
+  "type": "note_summary",
+  "session_id": "note_20260111_103045",
+  "duration_minutes": 5,
+  "timestamp": "2026-01-11T10:35:12",
+  "artifacts": {
+    "master_guide": "C:\\path\\to\\master_guide.md",
+    "flashcards": "C:\\path\\to\\flashcards.json",
+    "quiz": "C:\\path\\to\\quiz.json",
+    "mindmap": "C:\\path\\to\\mindmap.mmd",
+    "cornell_notes": null,
+    "spaced_repetition": null,
+    "citation_index": null
+  },
+  "stats": {
+    "total_flashcards": 12,
+    "agents_successful": 3
+  },
+  "preview_text": "This lecture covered advanced neural networks..."
+}
+
+CRITICAL RULES:
+1. If an artifact is null, it means generation failed or no content
+2. File paths are absolute Windows paths
+3. Frontend should download files via HTTP server (if exposed) or display paths
+
+3.5 RETRIEVE LAST NOTE (if UI crashed)
+---------------------------------------
+TOPIC:   /note/1
+PAYLOAD: "GET_SUMMARIZE"
+
+Backend will re-send the latest note result to gacor/1
+
+================================================================================
+SECTION 4: LIVE AGENT SYSTEM
+================================================================================
+
+4.1 START AGENT
+---------------
+TOPIC:   /agent/1
+PAYLOAD: "AGENTON"
+
+Example:
+  client.publish('/agent/1', 'AGENTON');
+
+Result: Agent starts listening to microphone and responds with voice
+
+4.2 STOP AGENT
+--------------
+TOPIC:   /agent/1
+PAYLOAD: "AGENTOFF"
+
+Example:
+  client.publish('/agent/1', 'AGENTOFF');
+
+Result: Agent stops immediately
+
+IMPORTANT BEHAVIORS:
+- If Note Taker starts (NOTEON), Agent auto-pauses
+- When Note Taker finishes (NOTEOFF complete), Agent auto-resumes
+- Agent uses camera + microphone (if available)
+
+================================================================================
+SECTION 5: DASHBOARD & HEARTBEAT
+================================================================================
+
+5.1 REQUEST DASHBOARD DATA
+---------------------------
+TOPIC:   dashboard/request
+PAYLOAD: "GET" (any string works)
+
+Example:
+  client.publish('dashboard/request', 'GET');
+
+5.2 RECEIVE DASHBOARD DATA
+---------------------------
+TOPIC:   dashboard/response
+PAYLOAD: JSON
+
+Example Response:
+{
+  "status": "success",
+  "timestamp": "2026-01-11T10:40:15.285396+00:00",
+  "services": {
+    "gmail": {
+      "status": "connected",
+      "email": "user@example.com"
+    },
+    "spotify": {
+      "status": "connected",
+      "user": "john_doe"
+    },
+    "calendar": {
+      "status": "not_connected"
+    }
+  },
+  "note_taker": {
+    "status": "idle",
+    "last_session": "note_20260111_103045"
+  },
+  "agent": {
+    "status": "running",
+    "mode": "active"
+  },
+  "memory": {
+    "total_facts": 1234,
+    "core_memories": 56
+  }
+}
+
+5.3 REQUEST HEARTBEAT (Check if Backend is Alive)
+--------------------------------------------------
+TOPIC:   alex/dashboard/state/request
+PAYLOAD: "" (empty is fine)
+
+Example:
+  client.publish('alex/dashboard/state/request', '');
+
+5.4 RECEIVE HEARTBEAT
+---------------------
+TOPIC:   alex/dashboard/state/response
+PAYLOAD: JSON
+
+Example:
+{
+  "status": "alive",
+  "timestamp": "2026-01-11T10:40:30"
+}
+
+RECOMMENDED POLLING:
+- Dashboard: Every 30 seconds
+- Heartbeat: Every 10 seconds (to detect disconnections fast)
+
+================================================================================
+SECTION 6: HISTORY & MEMORY SYSTEM
+================================================================================
+
+6.1 REQUEST CONVERSATION HISTORY
+---------------------------------
+TOPIC:   history/2
+PAYLOAD: "check_history"
+
+Example:
+  client.publish('history/2', 'check_history');
+
+6.2 RECEIVE HISTORY
+-------------------
+TOPIC:   history/1
+PAYLOAD: JSON
+
+Example Response:
+{
+  "type": "timeline_feed",
+  "data": [
+    {
+      "timestamp": "2026-01-11T10:30:00",
+      "role": "user",
+      "text": "What's the weather?"
+    },
+    {
+      "timestamp": "2026-01-11T10:30:05",
+      "role": "model",
+      "text": "I'll check the weather for you."
+    }
+  ]
+}
+
+NOTES:
+- Returns last 20 messages
+- Includes timeline events (if any)
+- Fast response (non-blocking architecture)
+
+6.3 SEARCH MEMORY ACTIVITIES
+-----------------------------
+TOPIC:   memory/activity/search
+PAYLOAD: JSON
+
+Example Request:
+{
+  "query": "*"
+}
+
+To search for specific activities:
+{
+  "query": "note_taken"
+}
+
+6.4 RECEIVE SEARCH RESULTS
+---------------------------
+TOPIC:   memory/activity/response
+PAYLOAD: JSON Array
+
+Example Response:
+[
+  {
+    "id": 123,
+    "activity_type": "note_taken",
+    "activity_data": {
+      "session_id": "note_20260111_103045",
+      "duration_minutes": 5
+    },
+    "timestamp": "2026-01-11T10:35:12"
+  },
+  {
+    "id": 124,
+    "activity_type": "auth_event",
+    "activity_data": {
+      "service": "GMAIL",
+      "status": "success"
+    },
+    "timestamp": "2026-01-11T09:15:00"
+  }
+]
+
+CRITICAL: Response is an ARRAY, not an object!
+
+6.5 REQUEST MEMORY STATS
+-------------------------
+TOPIC:   memory/stats/request
+PAYLOAD: "GET"
+
+Example:
+  client.publish('memory/stats/request', 'GET');
+
+6.6 RECEIVE MEMORY STATS
+-------------------------
+TOPIC:   memory/stats/response
+PAYLOAD: JSON
+
+Example Response:
+{
+  "total": 2276,
+  "by_activity_type": {
+    "note_taken": 45,
+    "auth_event": 12,
+    "agent_session": 89
+  },
+  "memories": {
+    "total": 1234,
+    "by_type": {
+      "fact": 500,
+      "preference": 234,
+      "identity": 12
+    }
+  }
+}
+
+================================================================================
+SECTION 7: ERROR HANDLING
+================================================================================
+
+7.1 COMMON ERROR RESPONSES
+---------------------------
+All systems can return error payloads:
+
+{
+  "type": "error",
+  "message": "Handler returned No Data",
+  "code": "NO_DATA"
+}
+
+{
+  "type": "error",
+  "message": "Database query failed",
+  "code": "HISTORY_FETCH_ERROR"
+}
+
+Error Codes:
+- NO_DATA: Handler completed but returned empty result
+- HISTORY_FETCH_ERROR: Database error when fetching history
+- INTERNAL_ERROR: Generic backend error
+
+7.2 TIMEOUT HANDLING
+---------------------
+If your frontend doesn't receive a response within 25 seconds:
+1. Show timeout error to user
+2. Check heartbeat (alex/dashboard/state/request)
+3. If heartbeat fails, assume backend is down
+4. Retry request once after 5 seconds
+
+7.3 CONNECTION LOSS
+--------------------
+MQTT.js automatically reconnects. Listen for:
+
+client.on('reconnect', () => {
+  console.log('Reconnecting to broker...');
+});
+
+client.on('offline', () => {
+  console.log('Backend is offline');
+  // Show red indicator in UI
+});
+
+================================================================================
+SECTION 8: COMPLETE WORKING EXAMPLE (REACT)
+================================================================================
+
+import mqtt from 'mqtt';
+import { useEffect, useState } from 'react';
+
+function App() {
+  const [client, setClient] = useState(null);
+  const [noteStatus, setNoteStatus] = useState('idle');
+  const [dashboard, setDashboard] = useState(null);
+
+  useEffect(() => {
+    const mqttClient = mqtt.connect('mqtts://33d2caf18f7944cbb4ea3a8d2b8cba30.s1.eu.hivemq.cloud:8883', {
+      username: 'davinn',
+      password: 'Loana123*',
+      clientId: 'react_' + Math.random().toString(16).substr(2, 8)
+    });
+
+    mqttClient.on('connect', () => {
+      console.log('Connected');
+      
+      // Subscribe to all topics
+      mqttClient.subscribe('/note/status');
+      mqttClient.subscribe('gacor/1');
+      mqttClient.subscribe('dashboard/response');
+    });
+
+    mqttClient.on('message', (topic, payload) => {
+      const message = payload.toString();
+      
+      if (topic === '/note/status') {
+        const data = JSON.parse(message);
+        setNoteStatus(data.status);
+      } else if (topic === 'gacor/1') {
+        const data = JSON.parse(message);
+        console.log('Note Result:', data);
+      } else if (topic === 'dashboard/response') {
+        const data = JSON.parse(message);
+        setDashboard(data);
+      }
+    });
+
+    setClient(mqttClient);
+
+    return () => {
+      mqttClient.end();
+    };
+  }, []);
+
+  const startRecording = () => {
+    if (client) {
+      client.publish('/note/1', 'NOTEON');
+    }
+  };
+
+  const stopRecording = () => {
+    if (client) {
+      client.publish('/note/1', 'NOTEOFF');
+    }
+  };
+
+  const requestDashboard = () => {
+    if (client) {
+      client.publish('dashboard/request', 'GET');
+    }
+  };
+
+  return (
+    <div>
+      <h1>MQTT Dashboard</h1>
+      <p>Note Status: {noteStatus}</p>
+      <button onClick={startRecording}>Start Recording</button>
+      <button onClick={stopRecording}>Stop Recording</button>
+      <button onClick={requestDashboard}>Refresh Dashboard</button>
+      
+      {dashboard && (
+        <pre>{JSON.stringify(dashboard, null, 2)}</pre>
+      )}
+    </div>
+  );
+}
+
+export default App;
+
+================================================================================
+SECTION 9: QUICK REFERENCE TABLE
+================================================================================
+
+ACTION                  | PUBLISH TO              | PAYLOAD           | RESPONSE TOPIC
+------------------------|-------------------------|-------------------|-------------------------
+Auth Gmail              | /user1/0                | AUTH:GMAIL        | /user2/0
+Auth Spotify            | /user1/0                | AUTH:SPOTIFY      | /user2/0
+Start Recording         | /note/1                 | NOTEON            | /note/status
+Stop Recording          | /note/1                 | NOTEOFF           | /note/status, gacor/1
+Get Last Note           | /note/1                 | GET_SUMMARIZE     | gacor/1
+Start Agent             | /agent/1                | AGENTON           | (none)
+Stop Agent              | /agent/1                | AGENTOFF          | (none)
+Request Dashboard       | dashboard/request       | GET               | dashboard/response
+Request Heartbeat       | alex/dashboard/state/   | (empty)           | alex/dashboard/state/
+                        | request                 |                   | response
+Request History         | history/2               | check_history     | history/1
+Search Activities       | memory/activity/search  | {"query": "*"}    | memory/activity/response
+Request Memory Stats    | memory/stats/request    | GET               | memory/stats/response
+
+================================================================================
+SECTION 10: TROUBLESHOOTING
+================================================================================
+
+PROBLEM: No response from backend
+SOLUTION: 
+1. Check heartbeat (alex/dashboard/state/request)
+2. Verify MQTT connection is active (client.connected === true)
+3. Check backend logs for errors
+
+PROBLEM: "TIMEOUT" on auth
+SOLUTION:
+1. User must complete OAuth within 60 seconds
+2. Re-trigger auth request
+3. Ensure AUTH_REDIRECT_URI is accessible (https://genai.lumyx.my.id/)
+
+PROBLEM: Note result has null artifacts
+SOLUTION:
+- This is normal if LLM failed to generate that specific artifact
+- Check master_guide path (always present)
+- Artifacts are best-effort
+
+PROBLEM: Memory search returns empty array
+SOLUTION:
+- No activities match the query
+- Try query: "*" to get all activities
+- Check if backend has logged any activities (dashboard → memory.total_facts)
+
+PROBLEM: Dashboard shows old data
+SOLUTION:
+- Polling interval too long (reduce to 30s)
+- Backend might be caching (expected behavior)
+- Request fresh data with dashboard/request
+
+================================================================================
+END OF GUIDE
+================================================================================
+
+For issues, check:
+1. Backend logs (unified_app.py console output)
+2. MQTT broker connection status
+3. Network firewall (port 8883 must be open)
+
+This guide is 100% accurate to the running backend (unified_app.py).
+Last verified: January 11, 2026

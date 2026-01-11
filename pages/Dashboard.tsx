@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
 
         const fetchHeartbeat = () => {
             // Reactive Heartbeat v3.0
-            publish('alex/dashboard/state/request', 'ping');
+            publish('alex/dashboard/state/request', '');
         };
 
         // Initial fetch

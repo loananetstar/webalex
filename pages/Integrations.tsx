@@ -175,14 +175,14 @@ const Integrations: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
 
-                        {/* Google Ecosystem - Distinct entries, same tunnel */}
+                        {/* Google Ecosystem - Distinct entries, distinct commands per Guide Section 2.1 */}
                         <ServiceCard
                             icon="mail"
                             name="Gmail"
                             type="Google"
                             connected={googleConnected}
                             isLoading={isGoogleLoading('GMAIL')}
-                            onConnect={() => handleConnect('GMAIL', 'AUTH:GOOGLE')}
+                            onConnect={() => handleConnect('GMAIL', 'AUTH:GMAIL')}
                         />
                         <ServiceCard
                             icon="school"
@@ -190,7 +190,7 @@ const Integrations: React.FC = () => {
                             type="Google"
                             connected={googleConnected}
                             isLoading={isGoogleLoading('CLASSROOM')}
-                            onConnect={() => handleConnect('CLASSROOM', 'AUTH:GOOGLE')}
+                            onConnect={() => handleConnect('CLASSROOM', 'AUTH:GCLASSROOM')}
                         />
                         <ServiceCard
                             icon="cloud"
@@ -198,7 +198,7 @@ const Integrations: React.FC = () => {
                             type="Google"
                             connected={googleConnected}
                             isLoading={isGoogleLoading('DRIVE')}
-                            onConnect={() => handleConnect('DRIVE', 'AUTH:GOOGLE')}
+                            onConnect={() => handleConnect('DRIVE', 'AUTH:DRIVE')}
                         />
                         <ServiceCard
                             icon="calendar_today"
@@ -206,7 +206,7 @@ const Integrations: React.FC = () => {
                             type="Google"
                             connected={googleConnected}
                             isLoading={isGoogleLoading('CALENDAR')}
-                            onConnect={() => handleConnect('CALENDAR', 'AUTH:GOOGLE')}
+                            onConnect={() => handleConnect('CALENDAR', 'AUTH:CALENDAR')}
                         />
 
                         {/* WhatsApp - Link */}

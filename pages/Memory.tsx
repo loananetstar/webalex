@@ -48,7 +48,7 @@ const Memory: React.FC = () => {
     // Initial Load - Fetch Stats
     useEffect(() => {
         // Request stats on mount
-        publish('memory/stats/request', 'get_stats');
+        publish('memory/stats/request', 'GET');
     }, [publish]);
 
     // Parse MQTT Messages
@@ -106,7 +106,7 @@ const Memory: React.FC = () => {
                 days_back: 30,
                 limit: 10
             }));
-            publish('memory/stats/request', 'get_stats');
+            publish('memory/stats/request', 'GET');
         }
     }, [activeTab, publish]);
 
@@ -181,27 +181,32 @@ const Memory: React.FC = () => {
                                     <p>No timeline data available. Start a conversation with Alex.</p>
                                 </div>
                             ) : (
-                                <div className="relative pl-8 border-l-2 border-pink-100 dark:border-slate-700 space-y-12">
-                                    {timeline.map((item, i) => (
-                                        <div key={item.id || i} className="relative group">
-                                            <div className={`absolute -left-[41px] top-1 size-5 rounded-full border-4 border-white dark:border-[#1a0f14] ${item.type === 'conversation' ? 'bg-purple-500' : 'bg-teal-500'} group-hover:scale-125 transition-transform shadow-sm`}></div>
-                                            <div className="flex flex-col gap-1 mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.date} • {item.time}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${item.theme === 'Work' ? 'bg-blue-100 text-blue-700' :
-                                                        item.theme === 'Personal' ? 'bg-pink-100 text-pink-700' :
-                                                            item.theme === 'Health' ? 'bg-green-100 text-green-700' :
-                                                                item.theme === 'Code' ? 'bg-purple-100 text-purple-700' :
-                                                                    'bg-slate-100 text-slate-700'
-                                                        }`}>{item.theme}</span>
+                                <div className="relative pl-8 border-l-2 border-pink-100 dark:border-slate-700 space-y-8">
+                                    {timeline.map((item, i) => {
+                                        // Parse timestamp into date/time
+                                        const ts = item.timestamp ? new Date(item.timestamp) : new Date();
+                                        const dateStr = ts.toLocaleDateString();
+                                        const timeStr = ts.toLocaleTimeString();
+                                        // Map role to theme color
+                                        const isUser = item.role === 'user';
+
+                                        return (
+                                            <div key={i} className="relative group">
+                                                <div className={`absolute -left-[41px] top-1 size-5 rounded-full border-4 border-white dark:border-[#1a0f14] ${isUser ? 'bg-blue-500' : 'bg-teal-500'} group-hover:scale-125 transition-transform shadow-sm`}></div>
+                                                <div className="flex flex-col gap-1 mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{dateStr} • {timeStr}</span>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${isUser ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'}`}>
+                                                            {item.role || 'system'}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <h3 className="text-lg font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors cursor-pointer">{item.title}</h3>
+                                                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-pink-50 dark:border-slate-700 shadow-sm group-hover:shadow-md transition-shadow">
+                                                    <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{item.text || '(No content)'}</p>
+                                                </div>
                                             </div>
-                                            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-pink-50 dark:border-slate-700 shadow-sm group-hover:shadow-md transition-shadow cursor-pointer">
-                                                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{item.summary}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
