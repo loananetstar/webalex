@@ -62,7 +62,9 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 'memory/context/response',  // RECENT CONTEXT (LLM input)
                 '/agent/status',            // AGENT STATUS FEEDBACK
                 'agent/voice/list/response', // V2.0.1: VOICE LIST
-                'agent/voice/status'         // V2.0.1: VOICE SET CONFIRMATION
+                'agent/voice/status',        // V2.0.1: VOICE SET CONFIRMATION
+                'agent/summary/realtime',    // V2.2: LIVE SUMMARY
+                'agent/topics/current'       // V2.2: TOPIC CLASSIFICATION
             ];
 
             mqttClient.subscribe(topics, { qos: 1 }, (err) => {

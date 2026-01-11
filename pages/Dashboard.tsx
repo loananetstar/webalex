@@ -4,6 +4,7 @@ import { useMqtt } from '../context/MqttContext';
 import { motion } from 'framer-motion';
 import AgentStatusCard from '../components/dashboard/AgentStatusCard';
 import WeatherWidget from '../components/dashboard/WeatherWidget';
+import LiveInsights from '../components/dashboard/LiveInsights';
 
 import DebugLogWidget from '../components/dashboard/DebugLogWidget';
 
@@ -156,7 +157,8 @@ const Dashboard: React.FC = () => {
                     </motion.div>
 
                     <motion.div variants={itemVariants as any} className="lg:col-span-1 flex flex-col gap-4">
-
+                        {/* Multi-Agent Live Insights (v2.2) */}
+                        <LiveInsights />
 
                         <div className="relative h-[280px]"> {/* Placeholder to maintain layout */}
                             <div
