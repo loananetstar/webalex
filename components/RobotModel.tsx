@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 
-const RobotModel = (props: JSX.IntrinsicElements['group']) => {
+const RobotModel = (props: any) => {
     const { viewport } = useThree();
 
     // Refs

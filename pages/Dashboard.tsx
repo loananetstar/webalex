@@ -145,17 +145,17 @@ const Dashboard: React.FC = () => {
                 initial="hidden"
                 animate="visible"
             >
-                <motion.div variants={itemVariants} className="flex flex-col gap-1">
+                <motion.div variants={itemVariants as any} className="flex flex-col gap-1">
                     <h1 className="text-3xl md:text-4xl font-extrabold text-pink-950 dark:text-white tracking-tight">Good morning, Davin</h1>
                     <p className="text-pink-800/60 dark:text-pink-200/60 text-lg font-medium">Alex is ready to assist you today. Systems {isConnected ? 'connected' : 'connecting...'}.</p>
                 </motion.div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <motion.div variants={itemVariants}>
+                    <motion.div variants={itemVariants as any}>
                         <AgentStatusCard heartbeat={heartbeat} onToggle={toggleAgent} />
                     </motion.div>
 
-                    <motion.div variants={itemVariants} className="lg:col-span-1 flex flex-col gap-4">
+                    <motion.div variants={itemVariants as any} className="lg:col-span-1 flex flex-col gap-4">
 
 
                         <div className="relative h-[280px]"> {/* Placeholder to maintain layout */}
@@ -249,7 +249,7 @@ const Dashboard: React.FC = () => {
                     </motion.div>
                 </div>
 
-                <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <motion.div variants={itemVariants as any} className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="md:col-span-4 lg:col-span-1 flex flex-col gap-4">
                         <h3 className="text-lg font-bold text-pink-950 dark:text-white px-1">Quick Actions</h3>
                         <Link to="/notes" className="w-full text-left bg-white dark:bg-[#2d1b22] p-4 rounded-xl shadow-[0_2px_12px_-2px_rgba(236,72,153,0.1)] border border-pink-50 dark:border-pink-900/30 hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-md transition-all group flex items-center gap-3">
