@@ -1,0 +1,86 @@
+================================================================================
+             MEMORY PAGE: BACKEND GAP ANALYSIS & REQUIREMENTS
+================================================================================
+
+Last Updated: January 11, 2026
+Page: Memory.tsx
+Status: 50% Functional / 50% Mocked
+
+================================================================================
+SECTION 1: CURRENT STATUS BY TAB
+================================================================================
+
+TAB 1: LIVE HISTORY
+--------------------
+Status: ✅ WORKING
+Backend Topic: history/1 (Response to 'check_history')
+Data: Real-time conversation timeline.
+Action: None needed.
+
+TAB 2: ACTIVITY LOG
+--------------------
+Status: ✅ WORKING
+Backend Topic: memory/activity/response
+Data: Searchable activity events (notes, auth, etc).
+Stats: memory/stats/response (Working).
+Action: None needed.
+
+TAB 3: BASE MEMORY (Crucial Gap)
+---------------------------------
+Status: ❌ MOCKED (Dummy Data)
+Current Behavior: Displays hardcoded "Identity", "Preferences", "Health" facts.
+Requirement: Backend needs to store and serve persistent "Core Memories" or "Facts".
+
+PROPOSED PROTOCOL:
+Request: memory/base/request
+Payload: "GET"
+
+Response: memory/base/response
+Payload Schema:
+{
+  "categories": [
+    {
+      "name": "Identity",
+      "facts": ["Name is Davin", "Software Engineer"]
+    },
+    {
+      "name": "Preferences",
+      "facts": ["Likes dark mode", "Visual learner"]
+    }
+  ]
+}
+
+TAB 4: RECENT CONTEXT (Crucial Gap)
+------------------------------------
+Status: ❌ MOCKED (Dummy Data)
+Current Behavior: Displays hardcoded string representing LLM context.
+Requirement: Backend needs to expose the current active context window/system prompt.
+
+PROPOSED PROTOCOL:
+Request: memory/context/request
+Payload: "GET"
+
+Response: memory/context/response
+Payload Schema:
+{
+  "token_count": 1250,
+  "max_context": 8000,
+  "raw_text": "[SYSTEM_PROMPT]\nYou are Alex...\n\n[RECENT_MESSAGES]\nUser: Hello..."
+}
+
+================================================================================
+SECTION 2: REQUIRED BACKEND ACTIONS
+================================================================================
+
+1. IMPLEMENT BASE MEMORY ENDPOINT
+   - Create handler for `memory/base/request`
+   - Return structured JSON of core facts stored in RAG/Database.
+
+2. IMPLEMENT CONTEXT INSPECTION ENDPOINT
+   - Create handler for `memory/context/request`
+   - Return the actual sliding window text being sent to the LLM.
+   - Useful for debugging what the agent "knows" right now.
+
+================================================================================
+END OF REPORT
+================================================================================

@@ -48,16 +48,21 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('✅ MQTT Connected to HiveMQ Cloud');
             setIsConnected(true);
 
-            // Subscribe to ALL required topics from MQTT_PROTOCOL_GUIDE.txt Section 2
+            // Subscribe to ALL required topics from MQTT API V2.0.1
             const topics = [
                 '/user2/0',                 // AUTH RESPONSE
                 '/note/status',             // NOTE STATUS (Real-time)
-                'gacor/1',                  // NOTE RESULT (Final summary)
-                'alex/dashboard/state/response', // DASHBOARD HEARTBEAT (Reactive v3.0)
+                'gacor/1',                  // NOTE RESULT (Final summary - INLINE CONTENT!)
+                'alex/dashboard/state',     // V2.0.1: REACTIVE HEARTBEAT (renamed)
                 'dashboard/response',       // DASHBOARD DATA (On-demand)
                 'history/1',                // TIMELINE FEED (On-demand)
                 'memory/activity/response', // ACTIVITY DATA (On-demand)
-                'memory/stats/response'     // MEMORY STATS (On-demand)
+                'memory/stats/response',    // MEMORY STATS (On-demand)
+                'memory/base/response',     // BASE MEMORY (Core facts)
+                'memory/context/response',  // RECENT CONTEXT (LLM input)
+                '/agent/status',            // AGENT STATUS FEEDBACK
+                'agent/voice/list/response', // V2.0.1: VOICE LIST
+                'agent/voice/status'         // V2.0.1: VOICE SET CONFIRMATION
             ];
 
             mqttClient.subscribe(topics, { qos: 1 }, (err) => {

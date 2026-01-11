@@ -68,8 +68,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activePath, isOpen = false, onClose }
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        onClick={onClose} // Close sidebar on navigate (mobile)
-                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all transform ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:scale-[1.02]' : 'hover:bg-white/60 dark:hover:bg-white/10 text-pink-900/70 dark:text-pink-100/70 hover:text-primary dark:hover:text-pink-200 font-medium'}`}
+                                        onClick={onClose}
+                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all transform magnetic-hover ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'hover:bg-white/60 dark:hover:bg-white/10 text-pink-900/70 dark:text-pink-100/70 hover:text-primary dark:hover:text-pink-200 font-medium'}`}
                                     >
                                         <span className="material-symbols-outlined text-[24px]">{item.icon}</span>
                                         <p className="text-sm font-bold">{item.label}</p>
@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePath, isOpen = false, onClose }
                         </nav>
                     </div>
                     <div className="flex flex-col gap-2">
-                        <Link to="/settings" onClick={onClose} className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/60 dark:hover:bg-white/10 text-pink-900/70 dark:text-pink-100/70 hover:text-primary dark:hover:text-pink-200 transition-colors font-medium">
+                        <Link to="/settings" onClick={onClose} className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/60 dark:hover:bg-white/10 text-pink-900/70 dark:text-pink-100/70 hover:text-primary dark:hover:text-pink-200 transition-colors font-medium magnetic-hover">
                             <span className="material-symbols-outlined text-[24px]">settings</span>
                             <p className="text-sm">Settings</p>
                         </Link>

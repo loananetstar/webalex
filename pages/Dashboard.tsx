@@ -53,15 +53,20 @@ const Dashboard: React.FC = () => {
         active_status_message: "Connecting..."
     });
 
+    // v2.0: Agent Status from /agent/status (real-time feedback)
+    const [agentStatus, setAgentStatus] = useState<{ status: string; mode?: string; timestamp?: string }>({
+        status: 'stopped'
+    });
+
     // Dashboard Data (dashboard/response) - Weather & Integrations
     const [dashboardData, setDashboardData] = useState<any>(null);
 
     // Parse MQTT messages
     useEffect(() => {
-        // Heartbeat from alex/dashboard/state/response (v3.0 Reactive)
-        if (messages['alex/dashboard/state/response']) {
+        // Heartbeat from alex/dashboard/state (v2.0.1 Reactive)
+        if (messages['alex/dashboard/state']) {
             try {
-                const data = JSON.parse(messages['alex/dashboard/state/response']);
+                const data = JSON.parse(messages['alex/dashboard/state']);
                 setHeartbeat(data);
             } catch (e) {
                 console.error('Failed to parse heartbeat:', e);
@@ -77,6 +82,25 @@ const Dashboard: React.FC = () => {
                 console.error('Failed to parse dashboard response:', e);
             }
         }
+
+        // v2.0: Agent Status Feedback
+        if (messages['/agent/status']) {
+            try {
+                const data = JSON.parse(messages['/agent/status']);
+                setAgentStatus(data);
+                // Also update heartbeat.is_active based on agent status
+                setHeartbeat(prev => ({
+                    ...prev,
+                    is_active: data.status === 'running' || data.status === 'starting',
+                    active_status_message: data.status === 'running'
+                        ? (data.mode === 'paused' ? 'Agent Paused' : 'Listening...')
+                        : data.status === 'starting' ? 'Starting...'
+                            : 'Agent Offline'
+                }));
+            } catch (e) {
+                console.error('Failed to parse agent status:', e);
+            }
+        }
     }, [messages]);
 
     // Request dashboard data every 60 seconds (throttled)
@@ -89,8 +113,8 @@ const Dashboard: React.FC = () => {
         };
 
         const fetchHeartbeat = () => {
-            // Reactive Heartbeat v3.0
-            publish('alex/dashboard/state/request', '');
+            // Reactive Heartbeat v2.0.1
+            publish('alex/dashboard/state/request', 'GET');
         };
 
         // Initial fetch
