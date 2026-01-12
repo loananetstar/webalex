@@ -64,7 +64,8 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 'agent/voice/list/response', // V2.0.1: VOICE LIST
                 'agent/voice/status',        // V2.0.1: VOICE SET CONFIRMATION
                 'agent/summary/realtime',    // V2.2: LIVE SUMMARY
-                'agent/topics/current'       // V2.2: TOPIC CLASSIFICATION
+                'agent/topics/current',      // V2.2: TOPIC CLASSIFICATION
+                'device/battery/response'    // V2.2: BATTERY STATUS
             ];
 
             mqttClient.subscribe(topics, { qos: 1 }, (err) => {

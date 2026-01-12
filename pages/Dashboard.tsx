@@ -47,10 +47,11 @@ const Dashboard: React.FC = () => {
     const [showEvents, setShowEvents] = useState(false);
 
     // MQTT Heartbeat Data (alex/dashboard/state) - Updated every 5 seconds from backend
+    // MQTT Heartbeat Data - Set defaults for when backend is idle
     const [heartbeat, setHeartbeat] = useState({
         is_active: false,
-        battery_level: 0,
-        is_connected: false,
+        battery_level: 100,        // Default to full battery (realistic)
+        is_connected: false,       // Will be updated on MQTT connect
         active_status_message: "Connecting..."
     });
 
@@ -68,7 +69,12 @@ const Dashboard: React.FC = () => {
         if (messages['alex/dashboard/state']) {
             try {
                 const data = JSON.parse(messages['alex/dashboard/state']);
-                setHeartbeat(data);
+                console.log('📊 Heartbeat data:', data);
+                setHeartbeat(prev => ({
+                    ...prev,
+                    ...data,
+                    is_connected: isConnected // Override with actual MQTT state
+                }));
             } catch (e) {
                 console.error('Failed to parse heartbeat:', e);
             }
@@ -88,47 +94,85 @@ const Dashboard: React.FC = () => {
         if (messages['/agent/status']) {
             try {
                 const data = JSON.parse(messages['/agent/status']);
+                console.log('🤖 Agent status:', data);
                 setAgentStatus(data);
                 // Also update heartbeat.is_active based on agent status
                 setHeartbeat(prev => ({
                     ...prev,
                     is_active: data.status === 'running' || data.status === 'starting',
+                    battery_level: prev.battery_level || 100, // Keep battery or default
                     active_status_message: data.status === 'running'
                         ? (data.mode === 'paused' ? 'Agent Paused' : 'Listening...')
                         : data.status === 'starting' ? 'Starting...'
-                            : 'Agent Offline'
+                            : 'Ready'
                 }));
             } catch (e) {
                 console.error('Failed to parse agent status:', e);
             }
         }
-    }, [messages]);
 
-    // Request dashboard data every 60 seconds (throttled)
+        // v2.2: Device Battery Status
+        if (messages['device/battery/response']) {
+            try {
+                const data = JSON.parse(messages['device/battery/response']);
+                console.log('🔋 Battery data:', data);
+                if (data.status === 'success') {
+                    setHeartbeat(prev => ({
+                        ...prev,
+                        battery_level: data.level
+                    }));
+                }
+            } catch (e) {
+                console.error('Failed to parse battery data:', e);
+            }
+        }
+    }, [messages, isConnected]);
+
+    // Update connection state when MQTT connects/disconnects
+    useEffect(() => {
+        console.log('🔌 MQTT Connection State:', isConnected);
+        setHeartbeat(prev => ({
+            ...prev,
+            is_connected: isConnected,
+            active_status_message: isConnected
+                ? (prev.is_active ? prev.active_status_message : 'Ready')
+                : 'Connection Lost'
+        }));
+    }, [isConnected]);
+
+    // Request dashboard data every 30 seconds (throttled)
     useEffect(() => {
         if (!isConnected) return;
 
         const fetchData = () => {
-            console.log('Fetching dashboard data (weather/integrations)...');
+            console.log('📡 Fetching dashboard data (weather/integrations)...');
             publish('dashboard/request', 'GET');
         };
 
         const fetchHeartbeat = () => {
-            // Reactive Heartbeat v2.0.1
+            console.log('💓 Requesting heartbeat...');
             publish('alex/dashboard/state/request', 'GET');
+        };
+
+        const fetchBattery = () => {
+            console.log('🔋 Requesting battery status...');
+            publish('device/battery/request', 'GET');
         };
 
         // Initial fetch
         fetchData();
         fetchHeartbeat();
+        fetchBattery();
 
-        // Interval fetch (30s for Data, 5s for Heartbeat)
+        // Interval fetch (30s for Data, 5s for Heartbeat, 60s for Battery)
         const dataInterval = setInterval(fetchData, 30000);
         const heartbeatInterval = setInterval(fetchHeartbeat, 5000);
+        const batteryInterval = setInterval(fetchBattery, 60000);
 
         return () => {
             clearInterval(dataInterval);
             clearInterval(heartbeatInterval);
+            clearInterval(batteryInterval);
         };
     }, [isConnected, publish]);
 
