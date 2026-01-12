@@ -171,12 +171,6 @@ const Personalization: React.FC = () => {
                                                 }`}
                                         >
                                             <div className="tilt-card-inner">
-                                                {isCurrent && (
-                                                    <div className="absolute top-3 right-3 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                                                        Active
-                                                    </div>
-                                                )}
-
                                                 <div className="flex justify-between items-start mb-6">
                                                     {/* CSS Generated Avatar */}
                                                     <div className="relative">

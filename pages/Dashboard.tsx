@@ -294,25 +294,40 @@ const Dashboard: React.FC = () => {
 
                 <motion.div variants={itemVariants as any} className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="md:col-span-4 lg:col-span-1 flex flex-col gap-4">
-                        <h3 className="text-lg font-bold text-pink-950 dark:text-white px-1">Quick Actions</h3>
-                        <Link to="/notes" className="w-full text-left bg-white dark:bg-[#2d1b22] p-4 rounded-xl shadow-[0_2px_12px_-2px_rgba(236,72,153,0.1)] border border-pink-50 dark:border-pink-900/30 hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-md transition-all group flex items-center gap-3">
-                            <div className="bg-orange-50 dark:bg-orange-900/20 size-10 rounded-lg flex items-center justify-center text-orange-500 dark:text-orange-300 group-hover:scale-110 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/40 transition-all">
-                                <span className="material-symbols-outlined">edit_square</span>
-                            </div>
-                            <div>
-                                <p className="font-bold text-pink-950 dark:text-pink-50 text-sm">New Note</p>
-                                <p className="text-xs text-pink-400 dark:text-pink-400">Capture a thought</p>
-                            </div>
-                        </Link>
-                        <Link to="/memory" className="w-full text-left bg-white dark:bg-[#2d1b22] p-4 rounded-xl shadow-[0_2px_12px_-2px_rgba(236,72,153,0.1)] border border-pink-50 dark:border-pink-900/30 hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-md transition-all group flex items-center gap-3">
-                            <div className="bg-teal-50 dark:bg-teal-900/20 size-10 rounded-lg flex items-center justify-center text-teal-500 dark:text-teal-300 group-hover:scale-110 group-hover:bg-teal-100 dark:group-hover:bg-teal-900/40 transition-all">
-                                <span className="material-symbols-outlined">history</span>
-                            </div>
-                            <div>
-                                <p className="font-bold text-pink-950 dark:text-pink-50 text-sm">Review Memory</p>
-                                <p className="text-xs text-pink-400 dark:text-pink-400">Browse logs</p>
-                            </div>
-                        </Link>
+                        <h3 className="text-lg font-bold text-pink-950 dark:text-white px-1">Connected Services</h3>
+                        <div className="grid grid-cols-1 gap-4">
+                            {[
+                                { name: 'Gmail', icon: 'mail', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', status: 'Connected', badgeColor: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+                                { name: 'Calendar', icon: 'calendar_month', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', status: 'Connected', badgeColor: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+                                { name: 'Memory', icon: 'history', color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20', status: 'Connected', badgeColor: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' }
+                            ].map((service, index) => (
+                                <div key={index} className="group flex flex-col p-6 rounded-2xl bg-white dark:bg-[#1a2c35] border border-pink-100 dark:border-slate-800 shadow-[0_4px_20px_rgba(236,72,153,0.08)] hover:shadow-[0_12px_32px_rgba(236,72,153,0.15)] transition-all duration-300 transform hover:-translate-y-2 justify-between">
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`size-14 rounded-2xl flex items-center justify-center ${service.bg} ${service.color} group-hover:scale-110 transition-transform duration-300`}>
+                                                    <span className="material-symbols-outlined text-3xl">{service.icon}</span>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{service.name}</h3>
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${service.badgeColor}`}>
+                                                        <span className="size-1.5 rounded-full bg-green-500"></span> {service.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="pt-2">
+                                            <p className="text-slate-500 text-sm">Syncs with Alex</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-6 pt-4 border-t border-pink-50 dark:border-slate-700 flex justify-end">
+                                        <button className="w-full relative px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-100">
+                                            Disconnect
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                     <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-4">
                         <div className="flex items-center justify-between px-1">
