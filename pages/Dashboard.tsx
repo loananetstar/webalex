@@ -201,9 +201,6 @@ const Dashboard: React.FC = () => {
                     </motion.div>
 
                     <motion.div variants={itemVariants as any} className="lg:col-span-1 flex flex-col gap-4">
-                        {/* Multi-Agent Live Insights (v2.2) */}
-                        <LiveInsights />
-
                         <div className="relative h-[280px]"> {/* Placeholder to maintain layout */}
                             <div
                                 className={`
@@ -359,6 +356,14 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                </motion.div>
+
+                {/* Live Context - Full Width Bottom Section (v2.3) */}
+                <motion.div
+                    variants={itemVariants as any}
+                    className="w-full flex flex-col gap-4 mt-2"
+                >
+                    <LiveInsights />
                 </motion.div>
             </motion.div>
         </div>
