@@ -1,0 +1,348 @@
+﻿Script Kasar
+Link Upload File
+
+
+video stage 4 script
+1. Perkenalan Tim dan Project
+2. Masalah Solusi dan Inovatif
+        script : davin : saat ini, ai sudah dimana-mana, Namun dalam praktiknya ai belum benar benar menjadi bagian dari 
+        proses belajar manusia, ia masih pasif, terpisah, dan tidak memiliki konteks jangka Panjang. Kita masih harus 
+        membuka aplikasi, mengetik dan AI tidak memahami apa yang sudah dipelajari sebelumnya, AI belum berfungsi sebagai 
+        pendamping belajar yang berkelanjutan. Disini lah alex hadir, bukan sekedar hanya chatbot, alex adalah personal assistant berbasis IoT dan AI yang selalu         memahami konteks, dan memiliki personal jangka Panjang. 
+
+
+        Alex belajar dari interaksi pengguna melalui memory layer dan retrieval-augmented generation, sehingga mampu memberi respons yang relevan dan konsisten.
+        Dalam pendidikan, Alex berperan sebagai learning companion yang dapat diakses lewat suara tanpa membuka aplikasi. Mode Notebook memungkinkan pencatatan         otomatis,transkripsi, rangkuman, hingga pembuatan kuis dan flashcard untuk memperkuat pemahaman.
+        Pendekatan ini sejalan dengan pandangan UNESCO tentang peningkatan kualitas pembelajaran dan visi Jensen Huang (CEO NVIDIA) mengenai AI sebagai tutor personal         yang selalu hadir.
+        Dengan integrasi ke WhatsApp, Gmail, dan Calendar, Alex juga mendukung pengembangan keterampilan abad ke-21 seperti manajemen informasi, komunikasi, dan         refleksi belajar.
+
+
+
+
+3. Video Timelapse wiring 
+        script rivaldo : nah, sekarang kami lagi mau ngesoldier barang - barang nya guys, pertama - pertama kami mau soldier
+                         dulu, nah yang kita soldier itu adanya baterai ke TP4056, Mic INMP441 dan Keypad membrane ke pin es
+                         p32, selain itu kita juga menyolder speaker dan buzzer nya
+
+
+4. Alur data -> sensor -> ai -> output
+        video tampilan : videoin org lagi pegang alex
+        script fraderik : nah jadi dari data ----, ini dht 12 mendeteksi
+
+
+5. Dashboard berjalan
+        tampilan layar : screen record 
+        script suyan : nah ini tampilan depannya ada muka alex,nah ini kalau kita liat disamping ada ikon wa, spotify, goog kalender, dan juga gmail. Nah lanjut kalau                 scroll bawah ini kita bisa lihat suhu diruangan yang alex tempati dan juga kelembapannya. nah ini yang saya bilang tadi ada fitur wa dan kawan kawannya, ini 
+        kalau kita tekan akan menuju ke tampilan ---
+6. Ai memprediksi Suhu dan Kata Typo
+        tampilan layar : screen record : codinng
+        script ; Fraderik : nah ini salah satu fitur yang dimiliki alex juga selain dari 4 tadi yang disebutin teman saya, yang pertama adalah alex dapat memprediksi
+        suhu dan kelembapan menggunakan model LTSM dan yang kedua adalah alex juga dapat memprediksi kata-kata typo yang kita ketik menggunakan model xyz67
+
+
+7. Demo
+        tampilan layar : video
+        script : none
+
+
+8. Penutup
+        Alex tidak hanya robot ai biasa tetapi ai asisten yang dapat memahami konteks, dan memiliki personal jangka Panjang. Nah sekian dari kami, inilah alex, your 
+        personal assistant
+
+
+
+
+🚦 1. Perkenalan
+PERKENALAN TIM DAN PROJECT
+
+
+WARNA KUNING = OPTIONAL
+WARNA HIJAU = ALTERNATIF
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video perkenalan
+
+
+Scene 1 : INT. LAB BIO. PAGI/SIANG. (Total Durasi 12 + 40 = 52 detik)
+Merekam Prototype Kecerdasan Alex secara Cinematik dengan durasi 12 detik.
+Referensi perekaman Alex secara Cinematik
+
+
+Suyan berjalan dari tangga menuju ke ruangan lab bio. Suyan membuka pintu lalu menyapa ke anggota-anggota timnya sendiri. Video clip sekitar 10 detik. Pengeditan ke video clip Suyan ada template kertas-kertas lalu ada sound effect yang mengintroduce perkenalan kelompok.
+
+
+Setelah kamera mengarah ke Suyan, berpindah ke arah orang selanjutnya (Fraderik). Fraderik sedang duduk di meja lab, lalu menyapa balik ke arah Suyan (Pengeditan video sama seperti Suyan tadi). Fraderik kondisinya sedang mengetik-ngetik di komputer lalu saat ada Suyan baru sapa balik.
+
+
+Setelah kamera mengarah ke Fraderik, selanjutnya ke orang berikutnya yaitu Davin lagi nulis-nulis di papan whiteboard (posisi kamera harus keliatan muka Davin dari samping) (Posisinya Davin ini gak tau kalau ada kamera, jadi pura-pura ga tengok kamera, fokus tulis di papan tulis aja). Untuk proses pengeditan video tetap sama seperti sebelumnya.
+
+
+Setelah kamera mengarah ke Davin, selanjutnya berpindah ke arah Rivaldo yang sedang melakukan Solder (Posisi Rivaldo ini gak tau kalau ada kamera, jadi pura-pura ga tengok kamera aja, fokus ke solder). Setelah uda kerekam Rivaldo, habis tu Rivaldo ini ada merasa kepanggil gitu sama kawan-kawan anggotanya, habis tu semua anggota ngumpul disuatu tempat habis tu berpose sambil menunjukkan alat Prototype kita. 
+
+
+Setelah udah kerekam Rivaldo, baru kita take 1 video untuk menunjukkan hasil barang Prototype kita (Kecerdasan Alex). (Konsepnya tu habis perkenalan Rivaldo, habis tu clip transition, habis itu baru clip video yang barusan direkam tadi).
+
+
+Referensi Alternatif lainnya saat proses perkenalan tim
+
+
+Referensi Proses Pengeditan: 
+1. Link Sumber Transition Kertas
+2. Tutorial menambahkan Transition Green Screen
+
+
+🧑‍🏫 Setelah Perkenalan Video
+SETELAH PERKENALAN VIDEO
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video perkenalan
+
+
+Scene 1 : INT. LAB BIO. PAGI/SIANG. (Total Durasi 15-20 detik)
+Setelah scene perkenalan video tadi, dilanjutkan dengan transisi, lalu ada ada video perkenalan awal mengenai produk prototype (berupa penjelasan singkat secara umum tentang produk yang dibuat). 
+
+
+Suyan: Bayangkan AI yang benar-benar mengenal Anda. Bukan lagi sekadar chatbot yang hanya menjawab pertanyaan sesaat, tetapi AI personal yang memahami konteks, mengingat interaksi sebelumnya, dan menyesuaikan respons sesuai kebiasaan serta gaya belajar Anda. Tanpa perlu mengetik atau membuka aplikasi, Alex hadir langsung di ruang Anda—selalu siap mendengar, memahami, dan membantu secara nyata.
+
+
+Video Clip Interaksi manusia dengan robot AI.mp4
+
+
+
+
+
+
+
+
+
+
+
+
+❗ 2. Masalah Solusi dan Inovatif
+MASALAH SOLUSI DAN INOVATIF
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 2
+
+
+Scene 2 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  50-60 detik)
+Latar Background perekaman video Suyan (di depan lemari penyimpanan barang Lab Bio/Fisika). Posisi Suyan berdiri tegap dengan rileks, lalu menyampaikan informasi yang sudah dikuasai.
+Masalah:
+Suyan(Hadap kedepan): Saat ini, AI sudah hadir di mana-mana, tetapi belum benar-benar menjadi bagian dari proses belajar manusia. AI masih bersifat pasif dan terpisah dari konteks belajar yang berkelanjutan. Kita masih harus membuka aplikasi dan mengetik perintah, sementara AI tidak memahami apa yang telah dipelajari sebelumnya. Akibatnya, AI belum berfungsi sebagai pendamping belajar yang nyata dan kontekstual.
+Video clip orang ngetik di AI.mp4
+Fakta:
+Suyan(Hadap kekanan): Menurut laporan McKinsey, penerapan pembelajaran yang dipersonalisasi dengan bantuan AI dapat meningkatkan hasil belajar hingga sekitar 30%, karena materi dan umpan balik disesuaikan dengan kebutuhan tiap individu. Hal ini menunjukkan bahwa pembelajaran yang kontekstual dan personal mampu meningkatkan keterlibatan serta efektivitas belajar secara signifikan.
+Video clip student lagi belajar.mp4
+Solusi – Alex:
+Suyan(Hadap kekiri): Di sinilah Alex hadir sebagai solusi nyata. Alex bukan sekadar chatbot — ia adalah AI personal berbasis IoT yang memahami konteks dan memiliki memori interaksi jangka panjang. Alex belajar dari setiap interaksi pengguna, sehingga responsnya relevan, konsisten, dan sesuai dengan kebiasaan serta gaya belajar Anda. Dengan begitu, pembelajaran menjadi lebih personal dan kontekstual tanpa harus membuka aplikasi atau mengetik perintah.
+(Ada scene ngetampilin bentuk prototype kita, rekamnya ngeliling produk kita, habis tu transition patah-patah dari atas ke bawah, kanan ke kiri (Sekreatif mungkin)).
+Suyan(Hadap ke tengah lagi): Alex juga terintegrasi dengan aplikasi sehari-hari seperti WhatsApp, Gmail, dan Calendar, sehingga membantu mengelola komunikasi, jadwal, dan informasi belajar secara alami. Pendekatan ini menghadirkan AI bukan hanya sebagai alat, tetapi sebagai pendamping belajar yang selalu hadir, memahami konteks, dan membantu Anda mencapai hasil belajar yang lebih baik.
+(Ada scene Fraderik uda mulai nyaman menggunakan produk Alex sebagai proses pembelajarannya, mukanya jadi lebih senang dan lebih gembira. Proses belajarnya pun menjadi lebih efektif). 
+Referensi proses perekaman clip video produk cinematik
+
+
+
+
+
+
+⛷️ 3. Video Timelapse Wiring
+VIDEO TIMELAPSE WIRING
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 3
+
+
+Scene 3 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  45 detik)
+Rivaldo melakukan proses solder dan wiring di meja guru Lab Bio/di lantai (Senyaman mungkin). Lalu angle kamera diletakkan pas di samping kiri orang yang lagi ngesolder. Video berupa timelapse lalu diiringi dengan sound background yang menghangatkan namun terasa asiknya. 
+
+
+Rivaldo: Nah, sekarang kami lagi mau ngesolder barang-barang nya guys, pertama-pertama kami mau solder dulu. Nah yang kita soldier itu adanya baterai ke TP4056, Mic INMP441 dan Keypad membrane ke pin esp32, selain itu kita juga menyolder speaker dan buzzer nya.
+
+
+Rivaldo: (tambahkan lagi kalau ada scriptnya).
+
+
+Referensi sound background yang cocok
+
+
+🛒 4. Alur data -> sensor -> ai -> output
+ALUR DATA => SENSOR => AI => OUTPUT
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 4
+
+
+Scene 4 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  40 detik)
+Pertama-tama merekam Suyan yang sedang memegang produk prototype Alex. Dalam proses pengeditannya nanti sepanjang video ada Suyan yang sedang menggunakan produk prototype Alex ini, dan diselang-selang videonya juga ada video Davin yang menjelaskan tentang alurnya dari:
+Data => Sensor => AI => Output
+
+
+Davin: nah jadi dari data ----, ini dht 12 mendeteksi.. (silahkan diisi).
+
+
+💻 5. Dashboard berjalan
+DASHBOARD BERJALAN
+
+
+WARNA KUNING = OPTIONAL
+WARNA HIJAU = ALTERNATIF
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 5
+
+
+Scene 5 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  50 detik)
+Tampilan Layar : screen record (Dashboard/Web app). Dalam proses pengeditannya nanti, sambil screen record, nanti bakal ada satu clip yang nampilin muka Suyan menjelaskan tahap ini juga. Atau gak, nanti gunakan sistem share screen aja, jadi sambil menjelaskan fiturnya, ada muka Suyan nya juga di tampilan share screen.
+
+
+Suyan: Nah, ini adalah tampilan utama dari Alex. Di bagian depan, kita bisa langsung melihat wajah Alex yang menjadi representasi dari personal assistant ini. Tampilan ini dirancang agar terasa lebih hidup dan interaktif, seolah-olah Alex benar-benar hadir sebagai pendamping pengguna.
+Suyan: Jika kita perhatikan di bagian samping, terdapat beberapa ikon aplikasi seperti WhatsApp, Spotify, Google Calendar, dan juga Gmail. Ikon-ikon ini menunjukkan bahwa Alex tidak berdiri sendiri, tetapi terintegrasi langsung dengan layanan yang sudah kita gunakan sehari-hari. Dengan integrasi ini, Alex dapat membantu komunikasi, pengelolaan jadwal, hingga akses informasi secara lebih efisien.
+Suyan: Selanjutnya, jika kita scroll ke bagian bawah, kita bisa melihat informasi lingkungan di sekitar Alex, seperti suhu ruangan dan tingkat kelembapan. Fitur ini menunjukkan bahwa Alex juga berperan sebagai perangkat berbasis IoT yang mampu membaca kondisi fisik di sekitarnya, sehingga interaksinya tidak hanya berbasis data digital, tetapi juga konteks lingkungan nyata.
+Suyan: Seperti yang saya sebutkan sebelumnya, fitur WhatsApp dan aplikasi lainnya bisa diakses langsung dari sini. Ketika salah satu ikon ditekan, tampilan akan berpindah ke halaman khusus yang menampilkan fungsi dari aplikasi tersebut. Dari sinilah pengguna bisa berinteraksi dengan Alex untuk mengirim pesan, mengelola aktivitas, atau menjalankan perintah lain dengan lebih praktis dan terintegrasi.
+Referensi Proses Pengeditan: 
+1. Link Sumber Transition Kertas 
+
+
+
+
+
+
+
+
+🌡️ 6. Ai memprediksi Suhu dan Kata Typo
+AI MEMPREDIKSI SUHU DAN KATA TYPO
+
+
+WARNA KUNING = OPTIONAL
+WARNA HIJAU = ALTERNATIF
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 6
+
+
+Scene 6 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  40 detik)
+Tampilan layar: screen record (semua algoritma Codingnya/Dashboard). Dalam proses pengeditannya nanti, sambil screen record, nanti bakal ada satu clip yang nampilin muka Fraderik menjelaskan tahap ini juga. Atau gak, nanti gunakan sistem share screen aja, jadi sambil menjelaskan fiturnya, ada muka Fraderik nya juga di tampilan share screen.
+
+
+Davin: Nah, selain empat fitur utama yang sudah dijelaskan oleh teman saya sebelumnya, Alex juga memiliki beberapa fitur tambahan yang tidak kalah penting. Fitur pertama adalah kemampuan Alex untuk memprediksi suhu dan tingkat kelembapan ruangan. Prediksi ini dilakukan menggunakan model LSTM, sehingga Alex tidak hanya menampilkan kondisi saat ini, tetapi juga mampu memperkirakan perubahan kondisi lingkungan ke depannya. Dengan begitu, Alex bisa membantu pengguna lebih siap dan nyaman dalam beraktivitas.
+Davin: Fitur kedua adalah kemampuan Alex dalam memprediksi dan memperbaiki kata-kata typo yang kita ketik. Menggunakan model XYZ67, Alex dapat mengenali pola kesalahan pengetikan dan memberikan saran kata yang lebih tepat. Fitur ini membuat interaksi menjadi lebih cepat, mengurangi kesalahan, dan membantu pengguna tetap fokus tanpa harus bolak-balik memperbaiki teks secara manual.
+
+
+
+
+Referensi Proses Pengeditan: 
+1. Link Sumber Transition Kertas 
+💾 7. Demo
+DEMO
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 7
+
+
+Scene 7 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  50 detik)
+Tampilan Layar: Video
+Script: Davin
+
+
+1. Fitur Interaksi:
+* Pengguna memanggil Alex menggunakan suara.
+* Alex merespons secara langsung tanpa membuka aplikasi.
+* Pengguna memberikan pertanyaan lanjutan tanpa mengulang konteks.
+* Alex tetap memahami dan menjawab dengan sistem memori berlapis.
+* Ditunjukkan bahwa Alex mengingat percakapan sebelumnya.
+2. Fitur Rangkuman Belajar:
+* Pengguna menyebutkan topik pelajaran atau hasil catatan belajar.
+* Alex melakukan transkripsi atau menerima input teks.
+* Alex membuat rangkuman singkat dan mudah dipahami.
+* Alex menampilkan hasil rangkuman di layar.
+* (Opsional) Alex membuat kuis singkat atau flashcard dari rangkuman tersebut.
+3. Fitur Google Calender:
+* Pengguna meminta Alex mengecek jadwal hari ini.
+* Alex menampilkan agenda yang sudah tersimpan.
+* Pengguna meminta Alex menambahkan jadwal baru (misalnya jadwal belajar atau deadline tugas).
+* Alex mengonfirmasi jadwal dan menyimpannya ke Google Calendar.
+* Ditunjukkan sinkronisasi jadwal secara otomatis.
+4. Fitur Spotify:
+* Pengguna meminta Alex memutar musik (misalnya musik fokus atau santai).
+* Alex membuka Spotify dan memutar playlist yang sesuai.
+* Musik berubah sesuai perintah (pause, next, atau ganti mood).
+* Ditunjukkan bahwa Alex menyesuaikan musik dengan aktivitas pengguna (belajar atau istirahat).
+
+
+
+
+
+
+Demo bagian 1
+
+
+Demo bagian 2
+
+
+Demo bagian 3
+
+
+Demo bagian 4
+
+
+👾 8. Penampakan Prototype
+PENAMPAKAN PROTOTYPE
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 8
+
+
+Scene 8 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  20 detik)
+
+
+😁 9. Penutup
+PENUTUP
+
+
+Dresscode = Baju Putih, Celana PJOK/Celana Hitam/Celana Selasa Sekolah
+
+
+Link pengumpulan video scene 9
+
+
+Scene 9 : INT. LAB BIO. PAGI/SIANG. (Total Durasi  30 detik)
+Fraderik: Alex menunjukkan bahwa AI tidak perlu hanya lebih pintar.
+
+
+Rivaldo: AI harus mengerti kita, hadir nyata,
+
+
+Davin: dan relevan dalam setiap interaksi.
+
+
+Suyan: Sekian dari kami, inilah Alex — your personal assistant. (tangan menutup kamera).
+
+
+Ending Video nanti dibuatkan transisi video setelah Suyan menutup kamera, lalu dibuka lagi kameranya (nanti udah diganti ke clip robot Alex). Nanti saat clip video robot Alex dah muncul, nanti edit di tengah produk Alex nya ada tulisan Tim Lumyx.

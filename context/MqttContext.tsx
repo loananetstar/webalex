@@ -13,7 +13,8 @@ interface MqttContextType {
     isConnected: boolean;
     publish: (topic: string, message: string) => void;
     lastMessage: { topic: string; payload: string } | null;
-    messages: Record<string, string>; // Store last message per topic
+    messages: Record<string, string>;
+    client: mqtt.MqttClient | null;
 }
 
 const MqttContext = createContext<MqttContextType | undefined>(undefined);
@@ -141,8 +142,9 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isConnected,
         publish,
         lastMessage,
-        messages
-    }), [isConnected, publish, lastMessage, messages]);
+        messages,
+        client: client
+    }), [isConnected, publish, lastMessage, messages, client]);
 
     return (
         <MqttContext.Provider value={contextValue}>

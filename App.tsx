@@ -7,6 +7,7 @@ import Notes from './pages/Notes';
 import Memory from './pages/Memory';
 import Integrations from './pages/Integrations';
 import Personalization from './pages/Personalization';
+import Settings from './pages/Settings';
 import { MqttProvider } from './context/MqttContext';
 
 // Layout for the main application (Sidebar + Content)
@@ -49,7 +50,7 @@ const App: React.FC = () => {
                         <Route path="/memory" element={<Memory />} />
                         <Route path="/integrations" element={<Integrations />} />
                         <Route path="/personalization" element={<Personalization />} />
-                        <Route path="/settings" element={<div className="p-10 text-center"><h1 className="text-2xl font-bold">Settings Placeholder</h1></div>} />
+                        <Route path="/settings" element={<Settings />} />
                     </Route>
                 </Routes>
             </HashRouter>
