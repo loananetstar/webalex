@@ -2,11 +2,10 @@
 <img width="1200" height="475" alt="GHBanner" src="\" />
 </div>
 
-# Run and deploy your AI Studio app
-
+# BUILD BY LUMYX SUPPORT BY GEMINI! LOVE U ALL
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1SPhvPp6ib6iWQSFW3Z1SJ8QicJ_rp8-1
+SUPPORT BY SAMSUNG INNOVATION CAMPUS INDONESIA
 
 ## Run Locally
 
